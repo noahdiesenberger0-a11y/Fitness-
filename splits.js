@@ -23,10 +23,10 @@ function renderSplits() {
     return `<article class="card split-card${isActive ? ' is-active' : ''}" data-split="${s.id}">
       <div class="split-top">
         <div><h3>${esc(s.name)}</h3><div class="muted">${esc(splitMeta(s))}</div></div>
-        ${isActive ? `<span class="badge">${ic('check')}Aktiv</span>` : ''}
+        <span class="badges">${s.public ? `<span class="badge quiet">Öffentlich</span>` : ''}${isActive ? `<span class="badge">${ic('check')}Aktiv</span>` : ''}</span>
       </div>
       <div class="split-days">${s.days.map((d) => `<span>${esc(d.name)}</span>`).join('')}</div>
-      <div class="muted small">${done ? `${done}× trainiert` : 'Noch nicht trainiert'}${s.source?.templateId ? ' · aus Vorlage' : ''}</div>
+      <div class="muted small">${done ? `${done}× trainiert` : 'Noch nicht trainiert'}${s.source?.templateId ? ' · aus Vorlage' : s.source?.author ? ` · von ${esc(s.source.author)}` : ''}</div>
     </article>`;
   }).join('') : `<div class="card empty"><p>Du hast noch keinen Split. Übernimm eine Vorlage oder bau deinen eigenen.</p></div>`;
 
@@ -49,7 +49,7 @@ function showSplit(id, isTemplate) {
   if (!s) return;
   const isActive = !isTemplate && s.id === state.activeSplitId;
   openModal(`
-    <div class="muted">${isTemplate ? 'Vorlage' : 'Dein Split'}</div>
+    <div class="muted">${isTemplate ? 'Vorlage' : s.public ? 'Dein Split · öffentlich geteilt' : 'Dein Split'}</div>
     <h3>${esc(s.name)}</h3>
     <p class="muted">${esc(splitMeta(s))}</p>
     ${s.description ? `<p class="notes">${esc(s.description)}</p>` : ''}
@@ -64,6 +64,9 @@ function showSplit(id, isTemplate) {
         : `${isActive ? '' : `<button class="btn primary" data-activate="${s.id}">${ic('check')}Als aktiv setzen</button>`}
            <button class="btn" data-edit-split="${s.id}">${ic('edit')}Bearbeiten</button>
            <button class="btn" data-dup-split="${s.id}">${ic('copy')}Duplizieren</button>
+           ${s.source?.ref || s.source?.templateId ? '' : s.public
+             ? `<button class="btn" data-unshare-split="${s.id}">Nicht mehr teilen</button>`
+             : `<button class="btn" data-share-split="${s.id}">${ic('upload')}Öffentlich teilen</button>`}
            <button class="btn danger" data-del-split="${s.id}">${ic('trash')}Löschen</button>`}
       <button class="btn" data-close>Schließen</button>
     </div>`, 'tall');
@@ -164,7 +167,9 @@ function initSplits() {
     else if (ds.editSplit) editSplit(ds.editSplit);
     else if (ds.dupSplit) {
       const s = state.splits.find((x) => x.id === ds.dupSplit);
-      state.splits.push(cloneSplit(s, { name: s.name + ' (Kopie)' }));
+      const copy = cloneSplit(s, { name: s.name + ' (Kopie)', source: s.source });
+      delete copy.public; delete copy.publishedAt;
+      state.splits.push(copy);
       save(); closeModal(); renderSplits(); toast('Kopie angelegt');
     } else if (ds.delSplit) {
       if (!confirm('Split löschen? Deine bisherigen Trainings bleiben erhalten.')) return;

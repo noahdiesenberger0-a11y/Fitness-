@@ -3,8 +3,8 @@
 Eine Trainings-App für Krafttraining: eigene **Splits** bauen, im Gym **Sätze abhaken**, **Rekorde** sammeln
 und sehen, wie du stärker wirst. Mit Streaks und einem Aktivitätskalender wie auf GitHub.
 
-> **Etappe 1 von 3** – die App läuft lokal auf deinem Gerät. Als Nächstes kommen Konten und das Teilen von Splits
-> (Etappe 2), danach Feed, Folgen, Kudos und Kommentare (Etappe 3).
+> **Etappe 2 von 3** – Konten, Cloud-Sync, Splits teilen und Entdecken sind da.
+> Als Nächstes: Feed, Folgen, Kudos und Kommentare (Etappe 3).
 
 ## Features
 
@@ -39,6 +39,25 @@ und sehen, wie du stärker wirst. Mit Streaks und einem Aktivitätskalender wie 
 Daten der früheren Lauf-Version werden beim ersten Start automatisch übernommen: Krafttrainings bleiben Trainings,
 Läufe und andere Sportarten werden Cardio-Einträge, der alte Kraft-Plan wird zum Split „Mein Plan“.
 Die alten Daten bleiben zusätzlich unverändert im Browser gespeichert.
+
+## Cloud: Konto, Sync und Teilen (Supabase)
+
+Mit einem Konto werden Trainings, Cardio und Splits mit [Supabase](https://supabase.com) abgeglichen
+(„lokal zuerst“: die App funktioniert auch offline und gleicht später ab). Geteilte Splits und der Fortschritt
+pro Split erscheinen unter **Entdecken**. Beispieldaten werden nie hochgeladen.
+
+**Einrichtung (einmalig):**
+
+1. Im Supabase-Dashboard: **SQL Editor → New query**, den Inhalt von [`supabase/schema.sql`](supabase/schema.sql) einfügen und **Run**.
+   Das legt die Tabellen und die Zugriffsregeln an (Row Level Security: jeder ändert nur seine eigenen Daten).
+2. **Authentication → URL Configuration**: als **Site URL** die Adresse der App eintragen
+   (z. B. `https://<github-name>.github.io/Fitness-/`) und dieselbe Adresse unter **Redirect URLs** hinzufügen.
+   Sonst führen die Links in der Bestätigungs-Mail ins Leere.
+3. Optional **Google-Login**: unter **Authentication → Sign In / Providers → Google** aktivieren
+   (dazu braucht es eine Client-ID aus der Google Cloud Console). Der Button erscheint dann automatisch.
+
+Projekt-URL und öffentlicher Schlüssel stehen in `cloud.js`. Der öffentliche Schlüssel darf im Code stehen;
+den `service_role`/`secret`-Schlüssel niemals in die App schreiben.
 
 ## Design
 
@@ -102,6 +121,9 @@ Alle Daten bleiben lokal im Browser bzw. in der App (`localStorage`). Mit **Expo
 | `workout.js`   | Training: Sätze abhaken, Pausen-Timer, Rekorde, Übungsauswahl |
 | `splits.js`    | Splits verwalten und Split-Baukasten          |
 | `progress.js`  | Fortschritt: Kurven, Rekorde, Muskelgruppen, Wochenvolumen |
+| `cloud.js`     | Konto, Sync mit Supabase, Splits teilen, Entdecken |
+| `supabase/schema.sql` | Datenbank: Tabellen und Zugriffsregeln |
+| `vendor/`      | supabase-js 2.119.0 (MIT-Lizenz), lokal für den Offline-Betrieb |
 | `coach.js`     | Vorführen und Tempo-Coach mit animierter Figur |
 | `models.js`    | Animierte Übungs-Figuren (Posen, Muskeln, Geräte) |
 | `manifest.json`| Web-App-Manifest (Name, Icons, Vollbild, Shortcuts) |

@@ -38,6 +38,7 @@ function blankState() {
     customExercises: [],
     marks: {},
     settings: { sound: true, voice: true, vibrate: true, autoRest: true },
+    sync: { hashes: {} }, // Stand des Cloud-Abgleichs (cloud.js)
   };
 }
 
@@ -48,7 +49,7 @@ let period = 'week';
 function load() {
   try {
     const s = JSON.parse(localStorage.getItem(STORE_KEY));
-    if (s && s.version === 2) return { ...blankState(), ...s, settings: { ...blankState().settings, ...s.settings } };
+    if (s && s.version === 2) return { ...blankState(), ...s, settings: { ...blankState().settings, ...s.settings }, sync: { hashes: {}, ...s.sync } };
   } catch (e) { /* ignore */ }
   return migrate();
 }
@@ -103,9 +104,11 @@ function migrate() {
   return s;
 }
 
-function save() {
+/** Speichert lokal und stößt (wenn angemeldet) den Cloud-Abgleich an. noSync: nur lokal. */
+function save(noSync) {
   try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); }
   catch (e) { toast('Speichern fehlgeschlagen'); }
+  if (!noSync && typeof scheduleSync === 'function') scheduleSync();
 }
 
 /* ---------------- Helfer ---------------- */
@@ -235,6 +238,7 @@ function renderProfile() {
   renderHeatmap();
   renderTotals();
   renderHistory();
+  renderAccount();
 }
 
 function renderHeatmap() {
@@ -483,7 +487,7 @@ function loadDemo() {
   if ((state.workouts.length || state.cardio.length) && !confirm('Beispieldaten zu deinen bestehenden Daten hinzufügen?')) return;
   const rnd = (a, b) => a + Math.random() * (b - a);
   const round = (x) => Math.round(x / 2.5) * 2.5;
-  const split = cloneSplit(TEMPLATES[0], { source: { templateId: 'tpl-ppl' } });
+  const split = cloneSplit(TEMPLATES[0], { source: { templateId: 'tpl-ppl' }, demo: true });
   state.splits.push(split);
   state.activeSplitId = split.id;
   const start = { bench: 55, ohp: 35, incline: 40, lateral: 7, triceps: 20, deadlift: 85, pullup: 0, row: 50, facepull: 15, curl: 10,
@@ -561,11 +565,13 @@ function importData(file) {
   r.onload = () => {
     try {
       const d = JSON.parse(r.result);
-      if (d.version === 2 && Array.isArray(d.workouts)) state = { ...blankState(), ...d };
+      if (d.version === 2 && Array.isArray(d.workouts)) { const sync = state.sync; state = { ...blankState(), ...d, sync }; }
       else if (Array.isArray(d.activities)) {
         // Backup der alten Lauf-App
         localStorage.setItem(OLD_KEY, JSON.stringify(d));
+        const sync = state.sync;
         state = migrate();
+        state.sync = sync;
       } else throw new Error();
       markAllPRs();
       save(); toast('Import erfolgreich'); renderCurrent();
@@ -576,7 +582,7 @@ function importData(file) {
 
 /* ---------------- Navigation ---------------- */
 let currentView = 'train';
-const VIEWS = ['train', 'splits', 'progress', 'profile', 'split-edit'];
+const VIEWS = ['train', 'splits', 'discover', 'progress', 'profile', 'split-edit'];
 function showView(v) {
   if (!VIEWS.includes(v)) v = 'train';
   currentView = v;
@@ -590,6 +596,7 @@ function renderCurrent() {
   if (currentView === 'train') renderTrain();
   if (currentView === 'splits') renderSplits();
   if (currentView === 'progress') renderProgress();
+  if (currentView === 'discover') renderDiscoverView();
   if (currentView === 'profile') renderProfile();
 }
 
@@ -653,13 +660,18 @@ function init() {
   $('#btn-export').addEventListener('click', exportData);
   $('#file-import').addEventListener('change', (e) => e.target.files[0] && importData(e.target.files[0]));
   $('#btn-reset').addEventListener('click', () => {
-    if (!confirm('Wirklich ALLE Daten löschen? Trainings, Splits und Einstellungen.')) return;
-    state = blankState(); save(); toast('Alle Daten gelöscht'); showView('train');
+    const online = typeof user !== 'undefined' && user;
+    if (!confirm(online ? 'Wirklich ALLE Daten löschen? Auch in der Cloud – auf allen Geräten.' : 'Wirklich ALLE Daten löschen? Trainings, Splits und Einstellungen.')) return;
+    const sync = state.sync;
+    state = blankState();
+    if (online) state.sync = sync; // so werden die Löschungen in die Cloud übertragen
+    save(); toast('Alle Daten gelöscht'); showView('train');
   });
   initWorkout();
   initSplits();
   initProgress();
-  save(); // übernommene Daten sofort im neuen Format sichern
+  save(true); // übernommene Daten sofort im neuen Format sichern
+  initCloud();
   const hashView = location.hash.slice(1);
   showView(VIEWS.includes(hashView) && hashView !== 'split-edit' ? hashView : 'train');
   restoreWorkout();
