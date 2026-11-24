@@ -22,6 +22,7 @@
     <nav class="tabs" id="tabs">
       <button data-view="dashboard" class="active"><span class="ti">📊</span>Übersicht</button>
       <button data-view="feed"><span class="ti">📋</span>Aktivitäten</button>
+      <button data-view="strength"><span class="ti">🏋️</span>Kraft</button>
       <button data-view="record"><span class="ti rec-dot">⏺</span>Aufzeichnen</button>
       <button data-view="add"><span class="ti">➕</span>Eintragen</button>
     </nav>
@@ -124,6 +125,134 @@
       </div>
     </section>
 
+    <!-- KRAFT -->
+    <section id="view-strength" class="view">
+      <!-- Planen -->
+      <div id="st-setup">
+        <div class="card">
+          <div class="card-head"><h2>🏋️ Krafttraining</h2><span class="muted" id="st-plan-sum"></span></div>
+          <div id="st-plan"></div>
+          <button class="btn primary big st-go" id="st-start">▶ Training starten</button>
+        </div>
+
+        <form class="card form st-add" id="st-add">
+          <h2>Übung hinzufügen</h2>
+          <label>Übung
+            <select name="exercise" id="st-exercise"></select>
+          </label>
+          <label class="hidden" id="st-custom-wrap">Name der Übung <input name="custom" placeholder="z.B. Beinpresse" /></label>
+          <div class="steppers">
+            <label>Sätze <div class="stepper"><button type="button" data-step="sets:-1">−</button><input name="sets" type="number" inputmode="numeric" min="1" max="20" value="3" /><button type="button" data-step="sets:1">+</button></div></label>
+            <label>Wiederholungen <div class="stepper"><button type="button" data-step="reps:-1">−</button><input name="reps" type="number" inputmode="numeric" min="1" max="100" value="8" /><button type="button" data-step="reps:1">+</button></div></label>
+            <label>Gewicht (kg) <div class="stepper"><button type="button" data-step="weight:-2.5">−</button><input name="weight" type="number" inputmode="decimal" min="0" step="0.5" value="0" /><button type="button" data-step="weight:2.5">+</button></div></label>
+          </div>
+          <div class="row">
+            <label>Tempo
+              <select name="tempo" id="st-tempo">
+                <option value="2-0-1-0">Normal · 2s runter, 1s hoch</option>
+                <option value="3-1-1-0" selected>Kontrolliert · 3s runter, 1s halten, 1s hoch</option>
+                <option value="4-1-2-1">Langsam · 4s runter, 1s halten, 2s hoch, 1s halten</option>
+                <option value="2-0-0.7-0">Explosiv · 2s runter, schnell hoch</option>
+                <option value="custom">Eigenes Tempo …</option>
+              </select>
+            </label>
+            <label>Satzpause
+              <select name="rest">
+                <option value="45">45 s</option><option value="60">1:00 min</option><option value="90" selected>1:30 min</option>
+                <option value="120">2:00 min</option><option value="180">3:00 min</option><option value="240">4:00 min</option>
+              </select>
+            </label>
+          </div>
+          <label class="hidden" id="st-tempo-custom-wrap">Eigenes Tempo (Sekunden: runter-halten-hoch-halten)
+            <input name="tempoCustom" placeholder="3-1-1-0" pattern="^\d+(\.\d+)?(-\d+(\.\d+)?){3}$" />
+          </label>
+          <div class="form-actions"><button class="btn" type="submit">+ Zum Training hinzufügen</button></div>
+        </form>
+
+        <div class="card">
+          <h2>Einstellungen</h2>
+          <label class="switch"><input type="checkbox" id="st-sound" checked /> <span>🔔 Signaltöne bei jeder Bewegung</span></label>
+          <label class="switch"><input type="checkbox" id="st-voice" checked /> <span>🗣️ Wiederholungen laut mitzählen</span></label>
+          <label class="switch"><input type="checkbox" id="st-vibrate" checked /> <span>📳 Vibration</span></label>
+        </div>
+      </div>
+
+      <!-- Training läuft -->
+      <div id="st-player" class="hidden">
+        <div class="card player">
+          <div class="pl-head">
+            <div><div class="pl-ex" id="pl-ex"></div><div class="muted" id="pl-sub"></div></div>
+            <div class="pl-clock" id="pl-clock">0:00</div>
+          </div>
+
+          <div class="pl-stage" id="pl-stage">
+            <div class="pl-phase" id="pl-phase">Bereit</div>
+            <svg class="pl-anim" id="pl-anim" viewBox="0 0 240 260" aria-hidden="true">
+              <line class="pl-track" x1="120" y1="40" x2="120" y2="220" />
+              <line class="pl-mark" x1="96" y1="40" x2="144" y2="40" />
+              <line class="pl-mark" x1="96" y1="220" x2="144" y2="220" />
+              <text class="pl-marktxt" x="150" y="44">oben</text>
+              <text class="pl-marktxt" x="150" y="224">unten</text>
+              <g id="pl-bar">
+                <rect class="pl-barbell" x="20" y="-4" width="200" height="8" rx="3" />
+                <rect class="pl-plate" x="34" y="-26" width="14" height="52" rx="3" />
+                <rect class="pl-plate" x="50" y="-19" width="9" height="38" rx="2" />
+                <rect class="pl-plate" x="192" y="-26" width="14" height="52" rx="3" />
+                <rect class="pl-plate" x="181" y="-19" width="9" height="38" rx="2" />
+              </g>
+            </svg>
+            <div class="pl-phasebar"><i id="pl-phasefill"></i></div>
+            <div class="pl-count"><span id="pl-rep">0</span><small> / <span id="pl-reps">8</span></small></div>
+            <div class="muted">Wiederholungen</div>
+            <div class="pl-dots" id="pl-sets"></div>
+          </div>
+
+          <!-- Pause zwischen Sätzen -->
+          <div class="pl-rest hidden" id="pl-rest">
+            <div class="pl-phase">Pause</div>
+            <svg class="pl-ring" viewBox="0 0 120 120">
+              <circle class="bg" cx="60" cy="60" r="52" />
+              <circle class="fg" id="pl-ring" cx="60" cy="60" r="52" />
+              <text x="60" y="68" id="pl-rest-time">1:30</text>
+            </svg>
+            <div class="pl-done"><span class="muted">Wie viele Wiederholungen hast du geschafft?</span>
+              <div class="stepper small"><button type="button" id="pl-done-minus">−</button><input id="pl-done" type="number" inputmode="numeric" min="0" /><button type="button" id="pl-done-plus">+</button></div>
+            </div>
+            <div class="muted" id="pl-next"></div>
+            <div class="rec-buttons">
+              <button class="btn" id="pl-rest-add">+15 s</button>
+              <button class="btn primary" id="pl-rest-skip">Weiter ▶</button>
+            </div>
+          </div>
+
+          <div class="rec-buttons pl-ctrl" id="pl-ctrl">
+            <button class="btn big" id="pl-pause">⏸ Pause</button>
+            <button class="btn big" id="pl-setdone">✓ Satz fertig</button>
+          </div>
+          <button class="btn danger" id="pl-stop">■ Training beenden</button>
+        </div>
+      </div>
+
+      <!-- Zusammenfassung -->
+      <div id="st-summary" class="hidden">
+        <div class="card">
+          <h2>💪 Training abgeschlossen</h2>
+          <div class="totals" id="sum-totals"></div>
+          <div id="sum-table"></div>
+          <form class="form" id="sum-form" style="margin-top:12px">
+            <label>Gefühl
+              <select name="feel"><option value="">–</option><option>😫 Hart</option><option>😐 Okay</option><option>🙂 Gut</option><option>🤩 Super</option></select>
+            </label>
+            <label>Notizen <textarea name="notes" rows="2" placeholder="Wie lief's?"></textarea></label>
+            <div class="form-actions">
+              <button class="btn primary" type="submit">Speichern</button>
+              <button class="btn danger" type="button" id="sum-discard">Verwerfen</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </section>
+
     <!-- EINTRAGEN -->
     <section id="view-add" class="view">
       <form class="card form" id="add-form">
@@ -168,5 +297,6 @@
   <div class="toast hidden" id="toast"></div>
 
   <script src="app.js"></script>
+  <script src="strength.js"></script>
 </body>
 </html>

@@ -307,6 +307,8 @@ function renderPRs() {
   }
   if (bestDay) prs.push(['Aktivster Tag', fmtHours(bestDay.s), null, fmtDate(bestDay.k)]);
 
+  prs.push(...strengthPRs());
+
   $('#prs').innerHTML = prs.map(([label, value, a, extra]) => `
     <div class="pr"${a ? ` data-id="${a.id}" style="cursor:pointer"` : ''}>
       <div class="label">${label}</div><div class="value">${value}</div>
@@ -358,6 +360,12 @@ function renderFeed() {
       stats.unshift(`<div><div class="label">Distanz</div><div class="value">${fmtKm(a.distanceKm)} km</div></div>`);
       stats.push(`<div><div class="label">${paceLabel(a.type)}</div><div class="value">${fmtPace(a.type, a.durationSec / a.distanceKm)}</div></div>`);
     }
+    if (a.exercises?.length) {
+      const sets = a.exercises.reduce((n, e) => n + e.sets.length, 0);
+      const vol = workoutVolume(a.exercises);
+      stats.push(`<div><div class="label">Sätze</div><div class="value">${sets}</div></div>`);
+      if (vol) stats.push(`<div><div class="label">Volumen</div><div class="value">${fmtKg(vol)}</div></div>`);
+    }
     if (a.feel) stats.push(`<div><div class="label">Gefühl</div><div class="value">${esc(a.feel)}</div></div>`);
     return `<div class="card activity" data-id="${a.id}">
       <div class="act-top"><div class="act-icon">${t.icon}</div>
@@ -365,6 +373,7 @@ function renderFeed() {
       </div>
       <div class="act-stats">${stats.join('')}</div>
       ${miniSplits(a)}
+      ${a.exercises?.length ? `<div class="ex-chips">${a.exercises.map((e) => `<span>${esc(e.name)} ${exerciseShort(e)}</span>`).join('')}</div>` : ''}
     </div>`;
   }).join('');
 }
@@ -437,6 +446,7 @@ function showActivity(id) {
     </div>
     ${a.notes ? `<p>${esc(a.notes)}</p>` : ''}
     ${a.route ? `<svg class="route" viewBox="0 0 300 200">${routeSvg(a.route)}</svg>` : ''}
+    ${a.exercises?.length ? exercisesTable(a.exercises) : ''}
     ${a.splits?.length ? `<h3 style="margin-top:14px">Splits</h3><table class="splits">${splitsTable(a.type, a.splits, a.distanceKm)}</table>` : ''}
     <div class="modal-actions">
       <button class="btn" data-edit="${a.id}">✏️ Bearbeiten</button>
@@ -841,7 +851,7 @@ function init() {
   });
   renderAll();
   const hashView = location.hash.slice(1);
-  if (['dashboard', 'feed', 'record', 'add'].includes(hashView)) showView(hashView);
+  if (['dashboard', 'feed', 'strength', 'record', 'add'].includes(hashView)) showView(hashView);
   recRestore();
   setupInstall();
   if ('serviceWorker' in navigator && location.protocol !== 'file:') {
@@ -885,4 +895,5 @@ function setupInstall() {
   window.addEventListener('appinstalled', () => box.classList.add('hidden'));
 }
 
-init();
+// Start, sobald alle Skripte (auch strength.js) geladen sind
+document.addEventListener('DOMContentLoaded', init);

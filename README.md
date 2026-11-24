@@ -13,6 +13,11 @@ in dem du siehst, an welchen Tagen du trainiert hast.
   - Heute bricht die Streak noch nicht, solange der Tag nicht vorbei ist
 - **Splits**: km-Splits mit Pace, Unterschied zum vorherigen km, schnellstem km ⚡ und Erkennung von Negativ-Splits
 - **GPS-Aufzeichnung**: Live-Tracking im Browser mit Zeit, Distanz, Pace, automatischen km-Splits (mit Vibration) und Routenskizze
+- **Kraft-Modus** 🏋️: Training aus Übungen zusammenstellen (z. B. Bankdrücken 3 × 8 mit 60 kg)
+  - Eine Animation gibt das **Tempo** jeder Wiederholung vor (z. B. 3 s runter, 1 s halten, 1 s hoch)
+  - Zählt Wiederholungen und Sätze mit, auf Wunsch mit Signaltönen, Sprachausgabe und Vibration
+  - Automatische **Satzpause** mit Countdown, tatsächlich geschaffte Wiederholungen lassen sich anpassen
+  - Speichert Sätze, Gewicht und Volumen, Bestleistungen pro Übung
 - **Manuelles Eintragen** mit Dauer, Distanz, Splits, Gefühl und Notizen; Bearbeiten und Löschen
 - **Statistiken**: Woche, Monat und Jahr, Aufteilung nach Sportart, Diagramm der letzten 12 Wochen
 - **Persönliche Bestleistungen**: längster Lauf, schnellster km, beste Pace ab 5 km, 10 km und Halbmarathon, längste Radtour und mehr
@@ -65,6 +70,7 @@ Alle Daten bleiben lokal im Browser bzw. in der App (`localStorage`). Mit **Expo
 | `index.html`   | Aufbau der Ansichten                          |
 | `styles.css`   | Design (dunkel/hell, mobil)                   |
 | `app.js`       | Logik: Streaks, Heatmap, Splits, GPS, Statistik |
+| `strength.js`  | Kraft-Modus: Sätze, Wiederholungen, Tempo-Animation |
 | `manifest.json`| Web-App-Manifest (Name, Icons, Vollbild, Shortcuts) |
 | `sw.js`        | Service Worker für den Offline-Betrieb        |
 | `icons/`       | App-Icons                                     |
