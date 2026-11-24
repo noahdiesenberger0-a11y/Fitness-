@@ -444,7 +444,7 @@ async function showUser(id) {
         <button class="card split-card mini" data-dc-split="${esc(s.ref)}"><b>${esc(s.data.name)}</b>
           <span class="muted">${esc(splitMeta(s.data))}</span></button>`).join('')}` : ''}
       <h4 class="sd-h">Letzte Trainings</h4>
-      ${list.length ? `<div class="feed in-sheet">${list.slice(0, 5).map((r) => feedCard(r)).join('')}</div>`
+      ${list.length ? `<div class="feed in-sheet">${list.slice(0, 5).map((r) => feedCard(r, { noWho: true })).join('')}</div>`
         : `<p class="muted">${pr.visibility === 'private' ? 'Dieses Profil ist privat.' : pr.visibility === 'followers' && !f ? 'Folge, um die Trainings zu sehen.' : 'Noch keine Trainings.'}</p>`}
       <div class="modal-actions"><button class="btn" data-close>Schließen</button></div>`, 'tall');
     await loadCounts(list.slice(0, 5));
@@ -524,12 +524,12 @@ function paintFeed() {
     : nobody ? '' : '<div class="card empty"><p>Noch keine Trainings. Leg los!</p></div>');
 }
 
-function feedCard(r) {
+function feedCard(r, o = {}) {
   const key = r.user_id + '|' + r.id;
   const p = social.profiles[r.user_id] || { id: r.user_id };
   const mine = user && r.user_id === user.id;
   return workoutCard(r.data, {
-    who: { name: mine ? (state.profile.name || displayName(p)) : displayName(p) },
+    who: o.noWho ? null : { name: mine ? (state.profile.name || displayName(p)) : displayName(p) },
     attr: `data-fw="${esc(key)}"`,
     footer: socialBar(key),
   });
@@ -627,6 +627,7 @@ function renderWorkoutSheet(r, focusComment) {
       <div><div class="label">Sätze</div><div class="value">${workoutSetCount(w.exercises)}</div></div>
       ${w.prs ? `<div><div class="label">Rekorde</div><div class="value pr-val">${ic('trophy')}${w.prs}</div></div>` : ''}
     </div>
+    ${muscleBar(w.exercises)}
     ${w.notes ? `<p class="notes">${esc(w.notes)}</p>` : ''}
     <div class="wd-list">${rows}</div>
     <div class="social-box" data-social="${r.user_id}|${r.id}"></div>

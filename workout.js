@@ -98,9 +98,10 @@ function renderTrain() {
       `<i class="${i < ws.length ? 'on' : ''}"></i>`).join('')}</div>
     <div><b>${ws.length} von ${goal}</b> Trainings diese Woche${ws.length ? ` · ${fmtKg(workoutVolume(ws.flatMap((w) => w.exercises)))}` : ''}</div>`;
 
-  const recent = sortedEntries().slice(0, 6);
+  const recent = sortedEntries().slice(0, 3);
   $('#tr-feed-head').classList.toggle('hidden', !recent.length);
-  $('#tr-feed').innerHTML = recent.map(entryCard).join('');
+  $('#tr-feed').classList.toggle('hidden', !recent.length);
+  $('#tr-feed').innerHTML = recent.map(entryRow).join('');
 }
 
 /* ---------------- Training starten ---------------- */

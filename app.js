@@ -231,8 +231,8 @@ function renderProfile() {
   $('#st-unit').textContent = s.current === 1 ? 'Tag' : 'Tage';
   const doneToday = allEntries().some((a) => a.date === ymd(today()));
   $('#st-note').textContent = doneToday
-    ? 'Heute erledigt. Morgen geht es weiter.'
-    : s.current > 0 ? 'Trainiere heute, um deine Streak zu halten. Ruhetage zählen auch.' : 'Trainiere heute, um eine neue Streak zu starten.';
+    ? 'Heute erledigt.'
+    : s.current > 0 ? 'Trainiere heute, um sie zu halten.' : 'Trainiere heute, um neu zu starten.';
   $('#st-longest').textContent = s.longest;
   $('#st-weeks').textContent = s.weekStreak;
   $('#st-skips').textContent = s.skips;
@@ -312,48 +312,51 @@ function renderTotals() {
  * o.who = { name }, o.attr = Klick-Attribut, o.footer = Kudos/Kommentare.
  */
 function workoutCard(w, o = {}) {
-  const sets = workoutSetCount(w.exercises);
   const vol = workoutVolume(w.exercises);
-  const groups = {};
-  for (const e of w.exercises) {
-    const g = exInfo(e.exId, e.name).group;
-    groups[g] = (groups[g] || 0) + doneSets(e).length;
-  }
-  const groupTotal = Object.values(groups).reduce((a, b) => a + b, 0) || 1;
-  const lines = w.exercises.slice(0, 3).map((e) => {
-    const b = bestOf(e);
-    return `<li><span>${esc(e.name)}</span><span class="muted">${doneSets(e).length} × · ${b ? fmtSet(b.set) : '–'}</span></li>`;
-  }).join('');
-  const more = w.exercises.length > 3 ? `<li class="muted">+ ${w.exercises.length - 3} weitere Übung${w.exercises.length - 3 === 1 ? '' : 'en'}</li>` : '';
-  const name = o.who?.name || state.profile.name || 'Du';
+  const name = o.who?.name;
   return `<article class="card activity" ${o.attr || `data-workout="${w.id}"`}>
-    <div class="act-top">
-      <div class="avatar sm" aria-hidden="true">${esc(name.charAt(0).toUpperCase())}</div>
-      <div><div class="act-who">${esc(name)}</div><div class="act-meta">${fmtDateRel(w.date)}${w.splitName ? ` · ${esc(w.splitName)}` : ''}</div></div>
-    </div>
-    <h3 class="act-title">${esc(w.title)}</h3>
+    ${name ? `<div class="act-top"><div class="avatar sm" aria-hidden="true">${esc(name.charAt(0).toUpperCase())}</div><span class="act-who">${esc(name)}</span></div>` : ''}
+    <div class="act-head"><h3 class="act-title">${esc(w.title)}</h3><span class="act-date">${fmtDateRel(w.date)}</span></div>
     <div class="act-stats">
       <div><div class="label">Dauer</div><div class="value">${fmtDur(w.durationSec)}</div></div>
       <div><div class="label">Volumen</div><div class="value">${vol ? fmtKg(vol) : '–'}</div></div>
-      <div><div class="label">Sätze</div><div class="value">${sets}</div></div>
       ${w.prs ? `<div><div class="label">Rekorde</div><div class="value pr-val">${ic('trophy')}${w.prs}</div></div>` : ''}
     </div>
-    <div class="muscle-bar" aria-label="Sätze pro Muskelgruppe">${Object.entries(groups).sort((a, b) => b[1] - a[1])
-      .map(([g, n]) => `<span style="flex:${n}" title="${GROUPS[g]}: ${n} Sätze"><i></i><small>${GROUPS[g]} ${Math.round((n / groupTotal) * 100)} %</small></span>`).join('')}</div>
-    <ul class="ex-lines">${lines}${more}</ul>
     ${o.footer || ''}
   </article>`;
+}
+/** Sätze pro Muskelgruppe als Balken (nur in der Detailansicht) */
+function muscleBar(exercises) {
+  const groups = {};
+  for (const e of exercises) {
+    const g = exInfo(e.exId, e.name).group;
+    groups[g] = (groups[g] || 0) + doneSets(e).length;
+  }
+  const total = Object.values(groups).reduce((a, b) => a + b, 0);
+  if (!total) return '';
+  return `<div class="muscle-bar" aria-label="Sätze pro Muskelgruppe">${Object.entries(groups).sort((a, b) => b[1] - a[1])
+    .map(([g, n]) => `<span style="flex:${n}" title="${GROUPS[g]}: ${n} Sätze"><i></i><small>${GROUPS[g]} ${Math.round((n / total) * 100)} %</small></span>`).join('')}</div>`;
 }
 function cardioCard(c) {
   const t = CARDIO[c.kind] || CARDIO.other;
   return `<article class="card activity cardio" data-cardio="${c.id}">
-    <div class="act-top"><div class="act-icon">${ic(t.icon)}</div>
-      <div><div class="act-who">${esc(c.title || t.name)}</div><div class="act-meta">${fmtDateRel(c.date)} · Cardio</div></div></div>
+    <div class="act-head"><h3 class="act-title">${ic(t.icon)}${esc(c.title || t.name)}</h3><span class="act-date">${fmtDateRel(c.date)}</span></div>
     <div class="act-stats">
       <div><div class="label">Dauer</div><div class="value">${fmtDur(c.durationSec)}</div></div>
       ${c.distanceKm ? `<div><div class="label">Distanz</div><div class="value">${String(c.distanceKm).replace('.', ',')} km</div></div>` : ''}
     </div>
   </article>`;
+}
+/** Einzeilige Zeile für „Letzte Trainings“ */
+function entryRow(a) {
+  const cardio = a.entry !== 'strength';
+  const t = cardio ? (CARDIO[a.kind] || CARDIO.other) : null;
+  const val = cardio ? (a.distanceKm ? `${String(a.distanceKm).replace('.', ',')} km` : fmtDur(a.durationSec)) : fmtKg(workoutVolume(a.exercises));
+  return `<button class="list-row entry-row" ${cardio ? `data-cardio="${a.id}"` : `data-workout="${a.id}"`}>
+    <span><b>${esc(a.title || t?.name || '')}</b><small>${fmtDateRel(a.date)}</small></span>
+    ${!cardio && a.prs ? `<span class="pr-val">${ic('trophy')}${a.prs}</span>` : ''}
+    <span class="entry-val num">${val}</span>${ic('chevron', 'chev')}
+  </button>`;
 }
 function sortedEntries(filter) {
   return allEntries()
@@ -362,10 +365,14 @@ function sortedEntries(filter) {
 }
 function entryCard(a) { return a.entry === 'strength' ? workoutCard(a) : cardioCard(a); }
 
+const HIST_PAGE = 10;
+let histShown = HIST_PAGE;
 function renderHistory() {
   const filter = $('#hist-filter').value;
   const list = sortedEntries(filter);
-  $('#history').innerHTML = list.length ? list.map(entryCard).join('')
+  const more = list.length - histShown;
+  $('#history').innerHTML = list.length ? list.slice(0, histShown).map(entryCard).join('')
+      + (more > 0 ? `<button class="btn wide" data-hist-more>Mehr anzeigen</button>` : '')
     : `<div class="card empty"><p>Noch keine Einträge.</p></div>`;
 }
 
@@ -404,6 +411,7 @@ function showWorkout(id) {
       <div><div class="label">Sätze</div><div class="value">${workoutSetCount(w.exercises)}</div></div>
       ${w.feel ? `<div><div class="label">Gefühl</div><div class="value">${esc(w.feel)}</div></div>` : ''}
     </div>
+    ${muscleBar(w.exercises)}
     ${w.notes ? `<p class="notes">${esc(w.notes)}</p>` : ''}
     <div class="wd-list">${rows}</div>
     ${typeof user !== 'undefined' && user && !w.demo ? `<div class="social-box" data-social="${user.id}|${w.id}"></div>` : ''}
@@ -699,7 +707,7 @@ document.addEventListener('click', (e) => {
   if (e.target.id === 'modal') return closeModal();
   const ico = e.target.closest('.color-opt');
   if (ico) return setAppIcon(ico.dataset.color);
-  const el = e.target.closest('[data-view],[data-day],[data-workout],[data-cardio],[data-close],[data-mark],[data-cardio-day],[data-p],[data-del-workout],[data-del-cardio],[data-edit-cardio],[data-repeat],[data-demo],[data-new-cardio]');
+  const el = e.target.closest('[data-view],[data-day],[data-workout],[data-cardio],[data-close],[data-mark],[data-cardio-day],[data-p],[data-del-workout],[data-del-cardio],[data-edit-cardio],[data-repeat],[data-demo],[data-new-cardio],[data-hist-more]');
   if (!el) return;
   const ds = el.dataset;
   if (ds.view) {
@@ -713,6 +721,7 @@ document.addEventListener('click', (e) => {
   else if (ds.day) showDay(ds.day);
   else if (ds.workout) showWorkout(ds.workout);
   else if (ds.cardio) showCardio(ds.cardio);
+  else if (ds.histMore !== undefined) { histShown += HIST_PAGE; renderHistory(); }
   else if (ds.close !== undefined) closeModal();
   else if (ds.mark !== undefined) { const [k, v] = ds.mark.split(':'); setMark(k, v); closeModal(); }
   else if (ds.cardioDay) cardioForm(null, ds.cardioDay);
@@ -740,7 +749,7 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('#mod
 function init() {
   state = load();
   $('#heat-filter').addEventListener('change', renderHeatmap);
-  $('#hist-filter').addEventListener('change', renderHistory);
+  $('#hist-filter').addEventListener('change', () => { histShown = HIST_PAGE; renderHistory(); });
   $('#pf-vis').addEventListener('change', (e) => { state.profile.visibility = e.target.value; save(); toast('Gespeichert'); });
   $('#pf-edit').addEventListener('click', () => {
     const n = prompt('Wie sollen andere dich sehen? (Name)', state.profile.name || '');
