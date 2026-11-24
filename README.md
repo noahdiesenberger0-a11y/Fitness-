@@ -44,7 +44,7 @@ Die alten Daten bleiben zusätzlich unverändert im Browser gespeichert.
 
 - **Benutzername:** Nach der Anmeldung wählst du deinen `@namen` (a–z, 0–9, Punkt, Unterstrich; einmalig vergeben)
 - **Leute finden:** Suche nach Benutzername oder Name, oder **Profil teilen** mit Link und eigenem **Pulse-Code** (wie ein Snapcode):
-  ein QR-Code im Stil des Logos (rote Verlaufs-Kacheln, blaue Ecken, Logo in der Mitte) auf einer blauen Karte mit deinem @namen,
+  ein QR-Code im Stil des Logos (flache blaue Kacheln, Ecken mit rotem Kern, Logo in der Mitte) auf einer blauen Karte mit deinem @namen,
   als Bild teilbar. Höchste Fehlerkorrektur, mit einem QR-Leser in vielen Größen getestet.
   Wer den Link `…/index.html?u=deinname` öffnet, sieht dein Profil und kann dir mit einem Tipp folgen
   (ohne Konto: erst registrieren, danach wird automatisch gefolgt)
@@ -80,8 +80,8 @@ den `service_role`/`secret`-Schlüssel niemals in die App schreiben.
 
 Das Design folgt den Regeln aus zwei Design-Skills ([taste-skill](https://github.com/leonxlnx/taste-skill) und [impeccable](https://github.com/pbakaus/impeccable)), die hier von Hand angewendet wurden:
 
-- **Farben:** Ägyptischblau als Akzent, Steinblau, Weiß und Rot (nur im Kalender und Logo). Kontraste geprüft: Text mindestens 4,5:1
-- **Logo:** ein kleiner Aktivitätskalender aus roten Kacheln, jede mit eigenem Verlauf. Zwei Icons (Blau, Hellblau), wählbar im Profil
+- **Farben:** Ägyptischblau steuert alles Antippbare. **Rot steht für Leistung und Schwung**: die Streak-Karte als rote Fläche, Rekorde, Fortschritt in %, erledigte Trainings der Woche, Kudos, Benachrichtigungen und der Kalender. Kontraste geprüft: Text mindestens 4,5:1
+- **Logo:** schlicht und flach: eine einfarbige Fläche mit 4 × 4 weißen Kacheln, die Kachel „heute“ unten rechts ist rot. Drei Icons (Blau, Hellblau, Rot), wählbar im Profil
 - **Am Handy wie eine App:** Tab-Leiste unten, durchscheinende Leisten, Großtitel, deren Titel beim Scrollen in die Kopfzeile wandert,
   Filter-Chips statt Auswahlfeldern, Listen wie in den iOS-Einstellungen, Bottom-Sheets zum Wegwischen, Scroll-Position pro Tab
 - **Schrift:** Barlow für Text, Barlow Semi Condensed für Überschriften und Zahlen (Ziffern mit fester Breite), lokal eingebunden (`fonts/`, SIL Open Font License)
@@ -90,6 +90,13 @@ Das Design folgt den Regeln aus zwei Design-Skills ([taste-skill](https://github
 - Rahmen statt Schatten, keine verschachtelten Karten, keine Reihe gleicher Kennzahl-Kacheln
 - Gestaltete Browser-Elemente: Fokus-Ring, Textauswahl, Scrollbalken, Schalter, Auswahlfelder
 - Hell- und Dunkelmodus nach Systemeinstellung, „Bewegung reduzieren“ wird beachtet
+
+## Design-Skills für Claude Code
+
+Unter `.claude/skills/` liegen Design-Skills, die Claude Code in diesem Repo automatisch nutzen kann
+(nach dem Start einer neuen Sitzung): `frontend-design` (Anthropic, Apache 2.0), `design-taste-frontend`
+(Taste Skill, MIT; ohne den 38-MB-Ordner `assets`), `impeccable` (Apache 2.0), `ui-ux-pro-max` und `design`
+(UI UX Pro Max, MIT). Lizenzen liegen in den Ordnern.
 
 ## Aufs Handy bringen (Web-App)
 

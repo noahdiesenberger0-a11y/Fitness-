@@ -10,7 +10,7 @@
     (function () {
       var c = 'blau';
       try { c = localStorage.getItem('pulse.color') || c; } catch (e) {}
-      if (!/^(blau|hellblau)$/.test(c)) c = 'blau';
+      if (!/^(blau|hellblau|rot)$/.test(c)) c = 'blau';
       document.documentElement.dataset.color = c;
       window.PULSE_COLOR = c;
     })();
@@ -43,7 +43,7 @@
   <!-- Icon-Set: 24er-Raster, eine Strichstärke, runde Enden -->
   <svg width="0" height="0" style="position:absolute" aria-hidden="true">
     <defs>
-      <symbol id="i-logo" viewBox="0 0 24 24"><path d="M2.5 12.5h4l2.5-6.5 5 12 2.5-5.5h5"/></symbol>
+      <symbol id="i-logo" viewBox="0 0 24 24"><rect x="1" y="1" width="22" height="22" rx="5" class="fill"/><g fill="#fff" stroke="none"><rect x="4.7" y="4.7" width="2.9" height="2.9" rx=".6"/><rect x="8.8" y="4.7" width="2.9" height="2.9" rx=".6"/><rect x="12.9" y="4.7" width="2.9" height="2.9" rx=".6"/><rect x="17" y="4.7" width="2.9" height="2.9" rx=".6"/><rect x="4.7" y="8.8" width="2.9" height="2.9" rx=".6"/><rect x="8.8" y="8.8" width="2.9" height="2.9" rx=".6"/><rect x="12.9" y="8.8" width="2.9" height="2.9" rx=".6"/><rect x="17" y="8.8" width="2.9" height="2.9" rx=".6"/><rect x="4.7" y="12.9" width="2.9" height="2.9" rx=".6"/><rect x="8.8" y="12.9" width="2.9" height="2.9" rx=".6"/><rect x="12.9" y="12.9" width="2.9" height="2.9" rx=".6"/><rect x="17" y="12.9" width="2.9" height="2.9" rx=".6"/><rect x="4.7" y="17" width="2.9" height="2.9" rx=".6"/><rect x="8.8" y="17" width="2.9" height="2.9" rx=".6"/><rect x="12.9" y="17" width="2.9" height="2.9" rx=".6"/></g><rect x="17" y="17" width="2.9" height="2.9" rx=".6" fill="#c8102e" stroke="none"/></symbol>
       <symbol id="i-home" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></symbol>
       <symbol id="i-list" viewBox="0 0 24 24"><path d="M9 6h11.5M9 12h11.5M9 18h11.5"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/></symbol>
       <symbol id="i-dumbbell" viewBox="0 0 24 24"><rect x="4.5" y="7" width="3.5" height="10" rx="1"/><rect x="16" y="7" width="3.5" height="10" rx="1"/><path d="M8 12h8M2.5 10v4M21.5 10v4"/></symbol>

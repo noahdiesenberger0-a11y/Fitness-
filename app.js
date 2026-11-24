@@ -635,7 +635,7 @@ function buildChips() {
 }
 
 /* ---------------- Profil: App-Icon ---------------- */
-const APP_ICONS = { blau: 'Blau', hellblau: 'Hellblau' };
+const APP_ICONS = { blau: 'Blau', hellblau: 'Hellblau', rot: 'Rot' };
 function renderIconPick() {
   const c = document.documentElement.dataset.color || 'blau';
   $('#color-pick').innerHTML = Object.entries(APP_ICONS).map(([k, name]) =>

@@ -5,7 +5,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 base = json.loads((ROOT / 'manifest.json').read_text())
 
-for color in ['blau', 'hellblau']:
+for color in ['blau', 'hellblau', 'rot']:
     m = json.loads(json.dumps(base))
     for icon in m['icons']:
         icon['src'] = icon['src'].replace('icons/', f'icons/{color}/')
