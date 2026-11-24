@@ -64,10 +64,12 @@ async function onSignedIn() {
   }
   await sync();
   renderCurrent();
+  if (typeof onSocialSignIn === 'function') onSocialSignIn();
 }
 function onSignedOut() {
   state.sync = { hashes: {} };
   save(true);
+  if (typeof onSocialSignOut === 'function') onSocialSignOut();
   renderCurrent();
 }
 

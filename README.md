@@ -3,8 +3,7 @@
 Eine Trainings-App für Krafttraining: eigene **Splits** bauen, im Gym **Sätze abhaken**, **Rekorde** sammeln
 und sehen, wie du stärker wirst. Mit Streaks und einem Aktivitätskalender wie auf GitHub.
 
-> **Etappe 2 von 3** – Konten, Cloud-Sync, Splits teilen und Entdecken sind da.
-> Als Nächstes: Feed, Folgen, Kudos und Kommentare (Etappe 3).
+> **Etappe 3 von 3** – Feed, Folgen, Kudos, Kommentare und Benachrichtigungen sind da.
 
 ## Features
 
@@ -40,6 +39,20 @@ Daten der früheren Lauf-Version werden beim ersten Start automatisch übernomme
 Läufe und andere Sportarten werden Cardio-Einträge, der alte Kraft-Plan wird zum Split „Mein Plan“.
 Die alten Daten bleiben zusätzlich unverändert im Browser gespeichert.
 
+## Sozial (Etappe 3)
+
+- **Benutzername:** Nach der Anmeldung wählst du deinen `@namen` (a–z, 0–9, Punkt, Unterstrich; einmalig vergeben)
+- **Leute finden:** Suche nach Benutzername oder Name, oder **Profil teilen** mit Link und **QR-Code** (wie bei Snapchat).
+  Wer den Link `…/index.html?u=deinname` öffnet, sieht dein Profil und kann dir mit einem Tipp folgen
+  (ohne Konto: erst registrieren, danach wird automatisch gefolgt)
+- **Feed** (eigener Tab): nur deine Trainings und die der Leute, denen du folgst. Kein „Für dich“
+- **Kudos** 💪 und **Kommentare** unter Trainings, auch unter deinen eigenen im Verlauf
+- **Benachrichtigungen** in der App: Glocke mit Zähler und Punkt am Feed-Tab bei neuen Followern, Kudos und Kommentaren
+- **Profile anderer:** Follower, Trainings der letzten 4 Wochen, Rekorde, Aktivitätskalender, geteilte Splits zum Übernehmen
+- Sichtbarkeit gilt überall: „Nur Follower“-Trainings sieht nur, wer dir folgt; „Privat“ sieht niemand
+
+**Entdecken** ist jetzt unter **Splits** zu finden.
+
 ## Cloud: Konto, Sync und Teilen (Supabase)
 
 Mit einem Konto werden Trainings, Cardio und Splits mit [Supabase](https://supabase.com) abgeglichen
@@ -50,6 +63,7 @@ pro Split erscheinen unter **Entdecken**. Beispieldaten werden nie hochgeladen.
 
 1. Im Supabase-Dashboard: **SQL Editor → New query**, den Inhalt von [`supabase/schema.sql`](supabase/schema.sql) einfügen und **Run**.
    Das legt die Tabellen und die Zugriffsregeln an (Row Level Security: jeder ändert nur seine eigenen Daten).
+   Danach genauso [`supabase/social.sql`](supabase/social.sql) für Benutzernamen, Kudos, Kommentare und Benachrichtigungen.
 2. **Authentication → URL Configuration**: als **Site URL** die Adresse der App eintragen
    (z. B. `https://<github-name>.github.io/Fitness-/`) und dieselbe Adresse unter **Redirect URLs** hinzufügen.
    Sonst führen die Links in der Bestätigungs-Mail ins Leere.

@@ -240,6 +240,7 @@ function renderProfile() {
   renderTotals();
   renderHistory();
   renderAccount();
+  if (typeof renderMySocial === 'function') renderMySocial();
 }
 
 function renderHeatmap() {
@@ -306,7 +307,11 @@ function renderTotals() {
 }
 
 /* ---------------- Verlauf / Feed-Karten ---------------- */
-function workoutCard(w) {
+/**
+ * Trainings-Karte. Für fremde (oder aus der Cloud geladene) Trainings:
+ * o.who = { name }, o.attr = Klick-Attribut, o.footer = Kudos/Kommentare.
+ */
+function workoutCard(w, o = {}) {
   const sets = workoutSetCount(w.exercises);
   const vol = workoutVolume(w.exercises);
   const groups = {};
@@ -320,8 +325,8 @@ function workoutCard(w) {
     return `<li><span>${esc(e.name)}</span><span class="muted">${doneSets(e).length} × · ${b ? fmtSet(b.set) : '–'}</span></li>`;
   }).join('');
   const more = w.exercises.length > 3 ? `<li class="muted">+ ${w.exercises.length - 3} weitere Übung${w.exercises.length - 3 === 1 ? '' : 'en'}</li>` : '';
-  const name = state.profile.name || 'Du';
-  return `<article class="card activity" data-workout="${w.id}">
+  const name = o.who?.name || state.profile.name || 'Du';
+  return `<article class="card activity" ${o.attr || `data-workout="${w.id}"`}>
     <div class="act-top">
       <div class="avatar sm" aria-hidden="true">${esc(name.charAt(0).toUpperCase())}</div>
       <div><div class="act-who">${esc(name)}</div><div class="act-meta">${fmtDateRel(w.date)}${w.splitName ? ` · ${esc(w.splitName)}` : ''}</div></div>
@@ -336,6 +341,7 @@ function workoutCard(w) {
     <div class="muscle-bar" aria-label="Sätze pro Muskelgruppe">${Object.entries(groups).sort((a, b) => b[1] - a[1])
       .map(([g, n]) => `<span style="flex:${n}" title="${GROUPS[g]}: ${n} Sätze"><i></i><small>${GROUPS[g]} ${Math.round((n / groupTotal) * 100)} %</small></span>`).join('')}</div>
     <ul class="ex-lines">${lines}${more}</ul>
+    ${o.footer || ''}
   </article>`;
 }
 function cardioCard(c) {
@@ -400,11 +406,13 @@ function showWorkout(id) {
     </div>
     ${w.notes ? `<p class="notes">${esc(w.notes)}</p>` : ''}
     <div class="wd-list">${rows}</div>
+    ${typeof user !== 'undefined' && user && !w.demo ? `<div class="social-box" data-social="${user.id}|${w.id}"></div>` : ''}
     <div class="modal-actions">
       <button class="btn" data-repeat="${w.id}">${ic('play')}Nochmal machen</button>
       <button class="btn danger" data-del-workout="${w.id}">${ic('trash')}Löschen</button>
       <button class="btn" data-close>Schließen</button>
     </div>`);
+  if (typeof fillSocialBoxes === 'function') fillSocialBoxes();
 }
 
 function showCardio(id) {
@@ -585,9 +593,9 @@ function importData(file) {
 
 /* ---------------- Navigation ---------------- */
 let currentView = 'train';
-const VIEWS = ['train', 'splits', 'discover', 'progress', 'profile', 'split-edit'];
-const VIEW_TITLES = { train: 'Training', splits: 'Splits', discover: 'Entdecken', progress: 'Fortschritt', profile: 'Profil', 'split-edit': 'Split' };
-const PUSHED = { 'split-edit': 'splits' }; // Unterseiten: Zurück führt zu diesem Tab
+const VIEWS = ['train', 'feed', 'splits', 'discover', 'progress', 'profile', 'split-edit'];
+const VIEW_TITLES = { train: 'Training', feed: 'Feed', splits: 'Splits', discover: 'Entdecken', progress: 'Fortschritt', profile: 'Profil', 'split-edit': 'Split' };
+const PUSHED = { 'split-edit': 'splits', discover: 'splits' }; // Unterseiten: Zurück führt zu diesem Tab
 const scrollMemory = {};
 
 function showView(v) {
@@ -675,6 +683,7 @@ function setupSheetSwipe() {
 function renderCurrent() {
   if (currentView === 'train') renderTrain();
   if (currentView === 'splits') renderSplits();
+  if (currentView === 'feed' && typeof renderFeedView === 'function') renderFeedView();
   if (currentView === 'progress') renderProgress();
   if (currentView === 'discover') renderDiscoverView();
   if (currentView === 'profile') renderProfile();
@@ -759,6 +768,7 @@ function init() {
   initProgress();
   save(true); // übernommene Daten sofort im neuen Format sichern
   initCloud();
+  if (typeof initSocial === 'function') initSocial();
   buildChips();
   $('#nav-back').addEventListener('click', () => showView(PUSHED[currentView] || 'train'));
   window.addEventListener('scroll', onScroll, { passive: true });

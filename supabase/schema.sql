@@ -39,7 +39,7 @@ create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
 
--- ---------- Folgen (für „Nur Follower“, Feed kommt in Etappe 3) ----------
+-- ---------- Folgen (für „Nur Follower“ und den Feed, siehe social.sql) ----------
 create table if not exists public.follows (
   follower   uuid not null references auth.users on delete cascade,
   following  uuid not null references auth.users on delete cascade,
