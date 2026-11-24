@@ -1,5 +1,5 @@
 /* Service Worker: macht Pulse offline nutzbar. Bei Änderungen VERSION erhöhen. */
-const VERSION = 'pulse-v14';
+const VERSION = 'pulse-v15';
 const ASSETS = [
   './', './index.html', './styles.css', './app.js', './models.js', './exercises.js', './coach.js',
   './workout.js', './splits.js', './progress.js', './cloud.js', './social.js', './vendor/supabase-2.119.0.js', './vendor/qrcode-generator-1.4.4.js', './manifest.json',

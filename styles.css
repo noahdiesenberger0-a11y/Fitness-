@@ -234,7 +234,8 @@ input[type=date] { padding-right: var(--s-2); }
 .streak-num .unit { font-size: 28px; font-weight: 600; color: inherit; }
 .streak-note { margin-top: var(--s-3); color: var(--muted); max-width: 40ch; }
 /* Die Streak besitzt Rot als Fläche: weiße Schrift, Trennlinien aus Weiß */
-.streak-top .label, .streak-top .streak-note, .streak-top .facts dt { color: var(--on-brand-2); }
+.streak-top .label, .streak-top .streak-note, .streak-top .facts dt { color: var(--muted); }
+.streak-top .streak-num { color: var(--accent); }
 .facts { margin: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-4); max-width: 420px; }
 .facts dt { color: var(--muted); font-size: var(--t-label); }
 .facts dd { margin: 0; font: 600 22px/1.15 var(--font-display); font-variant-numeric: tabular-nums; }
@@ -565,13 +566,14 @@ body.modal-open { overflow: hidden; }
 .next-card .mini-thumb { background: #fff; }
 /* 30 %: blaue Hauptfläche je Tab. Die Farb-Tokens werden innen umgestellt,
    damit Text, Linien, Chips und Diagramm von selbst passen. */
-.next-card, .streak-top, #pg-ex-card, .split-card.is-active {
+.next-card {
   background: var(--brand); color: #fff; border-color: transparent; box-shadow: none;
   --ink: #fff; --muted: var(--on-brand-2); --line: var(--brand-line);
   --panel: var(--brand); --panel2: rgba(255, 255, 255, .13);
   --accent: #fff; --on-accent: var(--brand);
 }
-.split-card.is-active:hover { border-color: transparent; }
+.split-card.is-active { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.split-card.is-active:hover { border-color: var(--accent); }
 .next-title { font-size: 34px; font-weight: 700; margin-top: 2px; }
 .next-list { list-style: none; margin: 0 0 var(--s-5); padding: 0; }
 .next-list li { display: flex; align-items: center; gap: var(--s-3); padding: 6px 0; border-bottom: 1px solid var(--line); }
