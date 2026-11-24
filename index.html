@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0d1117" />
+  <title>Pulse – Fitness Tracker</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="logo">◆</span> Pulse</div>
+    <nav class="tabs" id="tabs">
+      <button data-view="dashboard" class="active">Übersicht</button>
+      <button data-view="feed">Aktivitäten</button>
+      <button data-view="record">Aufzeichnen</button>
+      <button data-view="add">+ Eintragen</button>
+    </nav>
+  </header>
+
+  <main>
+    <!-- ÜBERSICHT -->
+    <section id="view-dashboard" class="view active">
+      <div class="card welcome hidden" id="welcome">
+        <h2>Willkommen bei Pulse 👋</h2>
+        <p class="muted">Trag dein erstes Training ein, starte eine GPS-Aufzeichnung oder schau dir die App mit Beispieldaten an.</p>
+        <div class="form-actions">
+          <button class="btn primary" data-goto="add">+ Aktivität eintragen</button>
+          <button class="btn" data-goto="record">▶ Aufzeichnen</button>
+          <button class="btn" data-demo>✨ Demo-Daten laden</button>
+        </div>
+      </div>
+      <div class="cards streaks">
+        <div class="card stat"><div class="label">🔥 Aktuelle Streak</div><div class="value" id="st-current">0</div><div class="sub">Tage in Folge</div></div>
+        <div class="card stat"><div class="label">🏆 Längste Streak</div><div class="value" id="st-longest">0</div><div class="sub">Tage</div></div>
+        <div class="card stat"><div class="label">📅 Wochen-Streak</div><div class="value" id="st-weeks">0</div><div class="sub">Wochen mit Training</div></div>
+        <div class="card stat"><div class="label">⏭️ Skips</div><div class="value" id="st-skips">0</div><div class="sub">ausgelassen (365 T.)</div></div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <h2 id="contrib-title">0 Aktivitäten im letzten Jahr</h2>
+          <select id="heat-filter"><option value="">Alle Sportarten</option></select>
+        </div>
+        <div class="heatmap-wrap">
+          <div class="heatmap" id="heatmap"></div>
+        </div>
+        <div class="heat-legend">
+          <span class="legend-marks">
+            <span><i class="cell rest"></i> Ruhetag</span>
+            <span><i class="cell skip"></i> Skip</span>
+          </span>
+          <span>Weniger <i class="cell l0"></i><i class="cell l1"></i><i class="cell l2"></i><i class="cell l3"></i><i class="cell l4"></i> Mehr</span>
+        </div>
+        <p class="hint">Tipp: Klick auf einen Tag, um ihn als Ruhetag 😴 oder Skip ⏭️ zu markieren oder die Aktivitäten zu sehen.</p>
+      </div>
+
+      <div class="grid2">
+        <div class="card">
+          <div class="card-head"><h2>Zeitraum</h2>
+            <div class="seg" id="period-seg">
+              <button data-p="week" class="active">Woche</button><button data-p="month">Monat</button><button data-p="year">Jahr</button>
+            </div>
+          </div>
+          <div class="totals" id="totals"></div>
+          <div id="type-breakdown"></div>
+        </div>
+        <div class="card">
+          <div class="card-head"><h2>Letzte 12 Wochen</h2><span class="muted">Minuten / Woche</span></div>
+          <div class="weekchart" id="weekchart"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h2>🏅 Persönliche Bestleistungen</h2></div>
+        <div class="prs" id="prs"></div>
+      </div>
+    </section>
+
+    <!-- FEED -->
+    <section id="view-feed" class="view">
+      <div class="card-head feed-head">
+        <h2>Aktivitäten</h2>
+        <select id="feed-filter"><option value="">Alle Sportarten</option></select>
+      </div>
+      <div id="feed"></div>
+    </section>
+
+    <!-- AUFZEICHNEN (GPS) -->
+    <section id="view-record" class="view">
+      <div class="card record">
+        <select id="rec-type"></select>
+        <div class="rec-time" id="rec-time">00:00:00</div>
+        <div class="rec-stats">
+          <div><div class="value" id="rec-dist">0.00</div><div class="label">km</div></div>
+          <div><div class="value" id="rec-pace">–</div><div class="label" id="rec-pace-label">Ø Pace /km</div></div>
+          <div><div class="value" id="rec-split">–</div><div class="label">aktueller km</div></div>
+        </div>
+        <div class="rec-buttons">
+          <button class="btn primary big" id="rec-start">▶ Start</button>
+          <button class="btn big hidden" id="rec-pause">⏸ Pause</button>
+          <button class="btn danger big hidden" id="rec-stop">■ Beenden</button>
+        </div>
+        <p class="muted" id="rec-gps">GPS: bereit</p>
+        <svg class="route" id="rec-route" viewBox="0 0 300 200" preserveAspectRatio="xMidYMid meet"></svg>
+        <table class="splits" id="rec-splits"></table>
+      </div>
+    </section>
+
+    <!-- EINTRAGEN -->
+    <section id="view-add" class="view">
+      <form class="card form" id="add-form">
+        <h2 id="form-title">Aktivität eintragen</h2>
+        <input type="hidden" name="id" />
+        <label>Sportart <select name="type" id="add-type"></select></label>
+        <label>Titel <input name="title" placeholder="z.B. Morgenlauf" /></label>
+        <div class="row">
+          <label>Datum <input type="date" name="date" required /></label>
+          <label>Dauer (hh:mm:ss) <input name="duration" placeholder="00:45:00" required pattern="^(\d{1,2}:)?\d{1,2}:\d{2}$" /></label>
+        </div>
+        <div class="row">
+          <label class="dist-field">Distanz (km) <input type="number" step="0.01" min="0" name="distance" placeholder="10" /></label>
+          <label>Gefühl
+            <select name="feel"><option value="">–</option><option>😫 Hart</option><option>😐 Okay</option><option>🙂 Gut</option><option>🤩 Super</option></select>
+          </label>
+        </div>
+        <label class="dist-field">Splits pro km (optional, mm:ss getrennt durch Komma)
+          <input name="splits" placeholder="5:12, 5:05, 4:58, 5:01" />
+        </label>
+        <label>Notizen <textarea name="notes" rows="3" placeholder="Wie lief's?"></textarea></label>
+        <div class="form-actions">
+          <button type="submit" class="btn primary">Speichern</button>
+          <button type="button" class="btn" id="add-cancel">Abbrechen</button>
+        </div>
+      </form>
+
+      <div class="card">
+        <h2>Daten</h2>
+        <div class="form-actions">
+          <button class="btn" id="btn-export">⬇ Export (JSON)</button>
+          <label class="btn">⬆ Import<input type="file" id="file-import" accept="application/json" hidden /></label>
+          <button class="btn" data-demo>✨ Demo-Daten laden</button>
+          <button class="btn danger" id="btn-reset">Alles löschen</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Modal -->
+  <div class="modal hidden" id="modal"><div class="modal-box" id="modal-box"></div></div>
+  <div class="toast hidden" id="toast"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
