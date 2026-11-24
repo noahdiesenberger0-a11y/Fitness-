@@ -81,7 +81,7 @@ den `service_role`/`secret`-Schlüssel niemals in die App schreiben.
 Das Design folgt den Regeln aus zwei Design-Skills ([taste-skill](https://github.com/leonxlnx/taste-skill) und [impeccable](https://github.com/pbakaus/impeccable)), die hier von Hand angewendet wurden:
 
 - **Farben 60:30:10:** 60 % Weiß bzw. helle Flächen, 30 % Ägyptischblau (je Tab eine blaue Hauptkarte: nächstes Training, Streak, Fortschritts-Diagramm, aktiver Split; dazu Kalender und Bedienung; Steinblau als Zwischenton), 10 % Scharlachrot (die eine Haupthandlung pro Bildschirm, Rekorde, Kudos, Skip-Tage im Kalender, Benachrichtigungen; Ruhetage sind steinblau mit Punkt). Kontraste geprüft: Text mindestens 4,5:1
-- **Logo:** flach, 4 × 4 Kacheln, Flächen exakt 60:30:10: blaue Fläche, weiße Kacheln, vier rote Kacheln steigen diagonal an (Fortschritt). Drei Icons (Blau, Hellblau, Rot mit blauer Diagonale), wählbar im Profil; erzeugt mit `tools/make_icons.py`
+- **Logo „Herzschlag“:** 4 × 4 Kacheln wie im Kalender; die Kacheln entlang einer Pulskurve leuchten in einem Verlauf von links Weiß nach rechts Rot, die übrigen sind zurückgenommen. Drei Icons (Blau, Hellblau, Rot), wählbar im Profil; erzeugt mit `tools/make_icons.py`
 - **Am Handy wie eine iPhone-App:** schwebende Tab-Leiste aus Milchglas wie in iOS 26, Buttons als Kapseln, runde Karten (22 px), Systemschrift (SF) für die Bedienung, durchscheinende Leisten, Großtitel, deren Titel beim Scrollen in die Kopfzeile wandert,
   Filter-Chips statt Auswahlfeldern, Listen wie in den iOS-Einstellungen, Bottom-Sheets zum Wegwischen, Scroll-Position pro Tab
 - **Schrift:** Barlow für Text, Barlow Semi Condensed für Überschriften und Zahlen (Ziffern mit fester Breite), lokal eingebunden (`fonts/`, SIL Open Font License)

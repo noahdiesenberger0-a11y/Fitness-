@@ -238,7 +238,7 @@ async function drawPulseCode(url, username) {
   g.fillText('Scannen, um mir auf Pulse zu folgen', CODE_W / 2, 1262);
   return cv;
 }
-/** Das App-Logo: blaue Fläche, weiße Kacheln, die Kachel „heute“ rot */
+/** Das App-Logo „Herzschlag“ */
 function drawLogo(g, x, y, size, ring = true) {
   const k = size / 512;
   g.fillStyle = '#1034a6';
@@ -247,12 +247,17 @@ function drawLogo(g, x, y, size, ring = true) {
     g.strokeStyle = '#ffffff'; g.lineWidth = Math.max(2, size * 0.04);
     g.beginPath(); g.roundRect(x, y, size, size, size * 0.22); g.stroke();
   }
-  // 60:30:10 – blaue Fläche, weiße Kacheln, rote Diagonale (Fortschritt)
-  const T = 82, G = 19, S0 = (512 - (4 * T + 3 * G)) / 2;
+  // Herzschlag: Kacheln entlang einer Pulskurve, Verlauf links Weiß → rechts Rot
+  const T = 82, G = 19, S0 = (512 - (4 * T + 3 * G)) / 2, PULSE = [2, 0, 3, 2];
+  const lg = g.createLinearGradient(x + S0 * k, 0, x + (512 - S0) * k, 0);
+  lg.addColorStop(0, '#ffffff'); lg.addColorStop(1, '#e8263d');
   for (let r = 0; r < 4; r++) for (let c = 0; c < 4; c++) {
-    g.fillStyle = r + c === 3 ? '#c8102e' : '#ffffff';
-    g.beginPath(); g.roundRect(x + (S0 + c * (T + G)) * k, y + (S0 + r * (T + G)) * k, T * k, T * k, 16 * k); g.fill();
+    const d = Math.abs(r - PULSE[c]);
+    g.globalAlpha = d === 0 ? 1 : d === 1 ? 0.3 : 0.12;
+    g.fillStyle = d === 0 ? lg : '#ffffff';
+    g.beginPath(); g.roundRect(x + (S0 + c * (T + G)) * k, y + (S0 + r * (T + G)) * k, T * k, T * k, T * 0.24 * k); g.fill();
   }
+  g.globalAlpha = 1;
 }
 
 let codeBlob = null;
