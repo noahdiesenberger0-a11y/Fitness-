@@ -19,18 +19,44 @@ in dem du siehst, an welchen Tagen du trainiert hast.
 - **Sportarten**: Laufen, Radfahren (km/h), Schwimmen (/100 m), Wandern, Gehen, Krafttraining, Yoga, Sonstiges
 - Export und Import als JSON, Demo-Daten zum Ausprobieren, Hell- und Dunkelmodus, für Handys optimiert
 
-## Starten
+## Aufs Handy bringen (Web-App)
 
-Es gibt keinen Build-Schritt und keine Abhängigkeiten. Starte einfach einen lokalen Server:
+Pulse ist eine **Progressive Web App**: Sie wird über den Browser installiert, bekommt ein eigenes Icon
+auf dem Home-Bildschirm, startet im Vollbild ohne Browserleiste und funktioniert auch offline.
+
+### 1. Online stellen
+
+Am Handy braucht die App **HTTPS**, sonst erlauben Handys weder GPS noch die Installation.
+Am einfachsten geht das mit GitHub Pages:
+
+1. Im Repository auf GitHub: **Settings → Pages**
+2. **Source: „Deploy from a branch“**, dann den Branch und den Ordner `/ (root)` wählen und speichern
+3. Nach ca. 1 Minute ist die App unter `https://<github-name>.github.io/Fitness-/` erreichbar
+
+> Achtung: GitHub Pages ist öffentlich. Deine Trainingsdaten sind es nicht, denn sie bleiben nur auf deinem Gerät.
+
+### 2. Installieren
+
+- **iPhone (Safari):** Seite öffnen → **Teilen** → **„Zum Home-Bildschirm“**
+- **Android (Chrome):** Seite öffnen → Banner **„App installieren“** antippen (oder Menü ⋮ → „App installieren“)
+
+### Was die Web-App am Handy kann
+
+- Offline nutzbar (Service Worker `sw.js`)
+- Navigationsleiste unten, Detailansichten als Bottom-Sheet, Safe-Area für Notch und Home-Indicator
+- **Bildschirm bleibt während der GPS-Aufzeichnung an** (Wake Lock). Browser stoppen GPS, sobald das Handy gesperrt wird.
+- **Laufende Aufzeichnung übersteht Schließen und Neuladen** und wird beim nächsten Öffnen fortgesetzt
+- Vibration bei jedem km-Split
+- App-Shortcuts (lange auf das Icon drücken): „Aufzeichnen“ und „Eintragen“
+
+### Lokal testen
 
 ```bash
 python3 -m http.server 8000
 # dann http://localhost:8000 öffnen
 ```
 
-> Für die GPS-Aufzeichnung auf dem Handy muss die Seite über **HTTPS** laufen (z. B. über GitHub Pages).
-
-Alle Daten bleiben lokal im Browser (`localStorage`).
+Alle Daten bleiben lokal im Browser bzw. in der App (`localStorage`). Mit **Export** kannst du ein Backup machen.
 
 ## Dateien
 
@@ -39,4 +65,6 @@ Alle Daten bleiben lokal im Browser (`localStorage`).
 | `index.html`   | Aufbau der Ansichten                          |
 | `styles.css`   | Design (dunkel/hell, mobil)                   |
 | `app.js`       | Logik: Streaks, Heatmap, Splits, GPS, Statistik |
-| `manifest.json`| Web-App-Manifest (zum Startbildschirm hinzufügen) |
+| `manifest.json`| Web-App-Manifest (Name, Icons, Vollbild, Shortcuts) |
+| `sw.js`        | Service Worker für den Offline-Betrieb        |
+| `icons/`       | App-Icons                                     |

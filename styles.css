@@ -169,3 +169,37 @@ select, input, textarea { background: var(--panel2); color: var(--text); border:
   .toast { bottom: 90px; }
   .rec-time { font-size: 44px; }
 }
+
+/* ---------- Handy / Web-App ---------- */
+html { -webkit-text-size-adjust: 100%; }
+body { -webkit-tap-highlight-color: transparent; overscroll-behavior-y: none; }
+button, .btn, .tabs button, .cell { touch-action: manipulation; }
+.topbar { padding-top: calc(10px + env(safe-area-inset-top)); padding-left: max(16px, env(safe-area-inset-left)); padding-right: max(16px, env(safe-area-inset-right)); }
+.ti { display: none; }
+
+.install { display: flex; gap: 12px; align-items: flex-start; position: relative; }
+.install img { border-radius: 10px; flex-shrink: 0; }
+.install-body { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; padding-right: 20px; font-size: 14px; }
+.install-close { position: absolute; top: 8px; right: 8px; background: none; border: 0; color: var(--muted); font-size: 16px; padding: 6px; cursor: pointer; }
+.ios-share { vertical-align: -2px; color: #0a84ff; }
+
+body.recording .rec-dot { color: var(--skip); animation: blink 1.2s infinite; }
+@keyframes blink { 50% { opacity: .3; } }
+
+@media (max-width: 600px) {
+  /* iOS zoomt bei Eingabefeldern < 16px automatisch rein */
+  select, input, textarea { font-size: 16px; }
+  .topbar { justify-content: center; padding-bottom: 8px; }
+  .brand { font-size: 18px; }
+  .ti { display: block; font-size: 20px; line-height: 1.1; margin-bottom: 2px; }
+  .tabs button { font-size: 11px; padding: 6px 2px; display: flex; flex-direction: column; align-items: center; color: var(--muted); }
+  .tabs button.active { background: none; color: var(--accent); }
+  .tabs button:not(.active) .ti { filter: grayscale(1); opacity: .75; }
+  .card { padding: 14px; }
+  .stat .value { font-size: 28px; }
+  .form .row { grid-template-columns: 1fr; }
+  .modal { align-items: end; padding: 0; }
+  .modal-box { border-radius: 18px 18px 0 0; max-height: 92vh; padding-bottom: calc(18px + env(safe-area-inset-bottom)); }
+  .rec-buttons .btn.big { flex: 1; justify-content: center; }
+  .record .route { max-height: 180px; }
+}

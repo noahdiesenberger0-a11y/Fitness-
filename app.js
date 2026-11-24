@@ -596,6 +596,55 @@ function onPosition(pos) {
   $('#rec-route').innerHTML = routeSvg(rec.points);
   $('#rec-splits').innerHTML = splitsTable($('#rec-type').value, rec.splits);
   recUpdateUi();
+  recPersist();
+}
+
+/* Laufende Aufzeichnung sichern, damit sie ein Neuladen / Schließen der App übersteht */
+const REC_KEY = 'pulse.rec';
+function recPersist() {
+  try {
+    if (!rec.running) return localStorage.removeItem(REC_KEY);
+    const { watch, timer, ...data } = rec;
+    localStorage.setItem(REC_KEY, JSON.stringify({ ...data, type: $('#rec-type').value }));
+  } catch (e) { /* ignore */ }
+}
+
+/* Bildschirm während der Aufzeichnung anlassen (sonst stoppt das GPS im Browser) */
+let wakeLock = null;
+async function recWakeLock(on) {
+  try {
+    if (on && !wakeLock && 'wakeLock' in navigator) {
+      wakeLock = await navigator.wakeLock.request('screen');
+      wakeLock.addEventListener('release', () => { wakeLock = null; });
+    } else if (!on && wakeLock) {
+      await wakeLock.release();
+      wakeLock = null;
+    }
+  } catch (e) { /* z.B. Akku-Sparmodus */ }
+}
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && rec.running && !rec.paused) recWakeLock(true);
+});
+window.addEventListener('beforeunload', (e) => {
+  if (rec.running) { recPersist(); e.preventDefault(); e.returnValue = ''; }
+});
+
+function recButtons() {
+  const active = rec.running && !rec.paused;
+  $('#rec-start').textContent = rec.running ? '▶ Weiter' : '▶ Start';
+  $('#rec-start').classList.toggle('hidden', active);
+  $('#rec-pause').classList.toggle('hidden', !active);
+  $('#rec-stop').classList.toggle('hidden', !rec.running);
+  $('#rec-type').disabled = rec.running;
+  document.body.classList.toggle('recording', rec.running);
+}
+
+function recAttach() {
+  rec.watch = navigator.geolocation.watchPosition(onPosition,
+    (err) => { $('#rec-gps').textContent = 'GPS-Fehler: ' + (err.code === 1 ? 'Standortzugriff nicht erlaubt' : err.message); },
+    { enableHighAccuracy: true, maximumAge: 1000, timeout: 20000 });
+  clearInterval(rec.timer);
+  rec.timer = setInterval(recUpdateUi, 500);
 }
 
 function recStart() {
@@ -604,38 +653,48 @@ function recStart() {
     Object.assign(rec, { running: true, paused: false, elapsed: 0, dist: 0, last: null, points: [], splits: [], splitStartSec: 0 });
     $('#rec-route').innerHTML = '';
     $('#rec-splits').innerHTML = '';
-    rec.watch = navigator.geolocation.watchPosition(onPosition,
-      (err) => { $('#rec-gps').textContent = 'GPS-Fehler: ' + err.message; },
-      { enableHighAccuracy: true, maximumAge: 1000, timeout: 20000 });
-    rec.timer = setInterval(recUpdateUi, 500);
+    recAttach();
   } else {
     rec.paused = false;
     rec.last = null; // nach Pause keine "Sprung"-Distanz zählen
   }
   rec.startTs = Date.now();
-  $('#rec-start').classList.add('hidden');
-  $('#rec-pause').classList.remove('hidden');
-  $('#rec-stop').classList.remove('hidden');
-  $('#rec-type').disabled = true;
+  recWakeLock(true);
+  recButtons();
+  recPersist();
 }
 function recPause() {
   rec.elapsed = recElapsed();
   rec.paused = true;
-  $('#rec-start').textContent = '▶ Weiter';
-  $('#rec-start').classList.remove('hidden');
-  $('#rec-pause').classList.add('hidden');
+  recWakeLock(false);
+  recButtons();
+  recPersist();
+}
+function recRestore() {
+  let d;
+  try { d = JSON.parse(localStorage.getItem(REC_KEY)); } catch (e) { return; }
+  if (!d || !d.running || !navigator.geolocation) return;
+  Object.assign(rec, d, { last: null });
+  if (TYPES[d.type]) $('#rec-type').value = d.type;
+  recAttach();
+  $('#rec-route').innerHTML = routeSvg(rec.points);
+  $('#rec-splits').innerHTML = splitsTable(d.type, rec.splits);
+  if (!rec.paused) recWakeLock(true);
+  recButtons();
+  recUpdateUi();
+  showView('record');
+  toast('Aufzeichnung wird fortgesetzt');
 }
 function recStop() {
+  if (!confirm('Aufzeichnung beenden und speichern?')) return;
   const sec = recElapsed();
   navigator.geolocation.clearWatch(rec.watch);
   clearInterval(rec.timer);
   rec.running = false;
+  recWakeLock(false);
+  recPersist();
+  recButtons();
   const type = $('#rec-type').value;
-  $('#rec-start').textContent = '▶ Start';
-  $('#rec-start').classList.remove('hidden');
-  $('#rec-pause').classList.add('hidden');
-  $('#rec-stop').classList.add('hidden');
-  $('#rec-type').disabled = false;
   if (sec < 10) return toast('Zu kurz – nicht gespeichert');
   // Rest-Split (angefangener km)
   const splits = [...rec.splits];
@@ -781,5 +840,49 @@ function init() {
     state = { activities: [], marks: {} }; save(); renderAll(); toast('Alle Daten gelöscht');
   });
   renderAll();
+  const hashView = location.hash.slice(1);
+  if (['dashboard', 'feed', 'record', 'add'].includes(hashView)) showView(hashView);
+  recRestore();
+  setupInstall();
+  if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  }
 }
+
+/* ---------------- Installation als App ---------------- */
+function setupInstall() {
+  const standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+  if (standalone) return;
+  let deferred = null;
+  const box = $('#install');
+  const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  let dismissed = false;
+  try { dismissed = localStorage.getItem('pulse.install.dismissed') === '1'; } catch (e) { /* ignore */ }
+  if (dismissed) return;
+
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferred = e;
+    $('#install-text').textContent = 'Installiere Pulse auf deinem Home-Bildschirm – wie eine echte App.';
+    $('#install-btn').classList.remove('hidden');
+    box.classList.remove('hidden');
+  });
+  if (isIos) {
+    $('#install-text').innerHTML = 'Als App installieren: tippe unten auf <b>Teilen</b> <svg class="ios-share" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M8 7l4-4 4 4"/><path d="M6 11H5v10h14V11h-1"/></svg> und dann auf <b>„Zum Home-Bildschirm“</b>.';
+    box.classList.remove('hidden');
+  }
+  $('#install-btn').addEventListener('click', async () => {
+    if (!deferred) return;
+    deferred.prompt();
+    await deferred.userChoice;
+    deferred = null;
+    box.classList.add('hidden');
+  });
+  $('#install-close').addEventListener('click', () => {
+    box.classList.add('hidden');
+    try { localStorage.setItem('pulse.install.dismissed', '1'); } catch (e) { /* ignore */ }
+  });
+  window.addEventListener('appinstalled', () => box.classList.add('hidden'));
+}
+
 init();

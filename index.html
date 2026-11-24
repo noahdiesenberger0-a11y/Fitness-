@@ -5,21 +5,37 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#0d1117" />
   <title>Pulse – Fitness Tracker</title>
+  <meta name="description" content="Trainings tracken mit Streaks, Splits und Aktivitätskalender" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Pulse" />
+  <meta name="format-detection" content="telephone=no" />
   <link rel="manifest" href="manifest.json" />
+  <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png" />
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <header class="topbar">
     <div class="brand"><span class="logo">◆</span> Pulse</div>
     <nav class="tabs" id="tabs">
-      <button data-view="dashboard" class="active">Übersicht</button>
-      <button data-view="feed">Aktivitäten</button>
-      <button data-view="record">Aufzeichnen</button>
-      <button data-view="add">+ Eintragen</button>
+      <button data-view="dashboard" class="active"><span class="ti">📊</span>Übersicht</button>
+      <button data-view="feed"><span class="ti">📋</span>Aktivitäten</button>
+      <button data-view="record"><span class="ti rec-dot">⏺</span>Aufzeichnen</button>
+      <button data-view="add"><span class="ti">➕</span>Eintragen</button>
     </nav>
   </header>
 
   <main>
+    <div class="card install hidden" id="install">
+      <img src="icons/icon-192.png" alt="" width="40" height="40" />
+      <div class="install-body">
+        <div id="install-text"></div>
+        <button class="btn primary hidden" id="install-btn">App installieren</button>
+      </div>
+      <button class="install-close" id="install-close" aria-label="Schließen">✕</button>
+    </div>
     <!-- ÜBERSICHT -->
     <section id="view-dashboard" class="view active">
       <div class="card welcome hidden" id="welcome">
