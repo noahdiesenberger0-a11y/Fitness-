@@ -23,14 +23,14 @@ in dem du siehst, an welchen Tagen du trainiert hast.
 - **Statistiken**: Woche, Monat und Jahr, Aufteilung nach Sportart, Diagramm der letzten 12 Wochen
 - **Persönliche Bestleistungen**: längster Lauf, schnellster km, beste Pace ab 5 km, 10 km und Halbmarathon, längste Radtour und mehr
 - **Sportarten**: Laufen, Radfahren (km/h), Schwimmen (/100 m), Wandern, Gehen, Krafttraining, Yoga, Sonstiges
-- **Zwei Farbwelten** mit je zwei Icons, im Profil wählbar: **Sunrise** (Galaxy Black, Stahlgrau, Sunrise-Orange mit Verlauf) und **Ägypten** (Ägyptischblau, Steinblau, Scharlachrot, Weiß). Das Logo ist ein kleiner Aktivitätskalender: jede Kachel eine andere Stufe mit eigenem Verlauf
+- **Farben:** Ägyptischblau, Steinblau, Rot und Weiß. Das Logo ist ein kleiner Aktivitätskalender aus roten Kacheln, jede mit eigenem Verlauf. Im Profil wählst du das Icon: Blau oder Hellblau
 - Export und Import als JSON (im Profil), Demo-Daten zum Ausprobieren, Hell- und Dunkelmodus
 
 ## Design
 
 Das Design folgt den Regeln aus zwei Design-Skills ([taste-skill](https://github.com/leonxlnx/taste-skill) und [impeccable](https://github.com/pbakaus/impeccable)), die hier von Hand angewendet wurden:
 
-- **Eine Akzentfarbe** je Farbwelt, sonst neutrale, warme Flächen. Kontraste geprüft: Text mindestens 4,5:1 in Hell und Dunkel
+- **Eine Akzentfarbe** (Ägyptischblau), Rot nur im Kalender, sonst neutrale, warme Flächen. Kontraste geprüft: Text mindestens 4,5:1 in Hell und Dunkel
 - **Am Handy wie eine App:** Tab-Leiste unten (Start, Aktivitäten, Aufzeichnen, Kraft, Profil), durchscheinende Leisten,
   Großtitel, deren Titel beim Scrollen in die Kopfzeile wandert, Filter-Chips statt Auswahlfeldern, Listen wie in den
   iOS-Einstellungen, Bottom-Sheets mit Griff zum Wegwischen, Scroll-Position pro Tab, erneutes Tippen auf den Tab scrollt nach oben
@@ -71,9 +71,9 @@ Am einfachsten geht das mit GitHub Pages:
 - Vibration bei jedem km-Split
 - App-Shortcuts (lange auf das Icon drücken): „Aufzeichnen“, „Krafttraining“ und „Eintragen“
 
-### App-Icon in einer anderen Farbe
+### Anderes App-Icon
 
-Im **Profil → App-Farbe** wählen. In der App gilt die Farbe sofort. Das Icon auf dem Home-Bildschirm übernimmt
+Im **Profil → App-Icon** wählen. Das Icon auf dem Home-Bildschirm übernimmt
 das Handy nur beim Hinzufügen: Pulse vom Home-Bildschirm entfernen und neu hinzufügen. Die Daten bleiben erhalten,
 solange du dieselbe Adresse benutzt.
 

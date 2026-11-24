@@ -3,14 +3,14 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content" />
-  <meta name="theme-color" content="#f3f4f6" media="(prefers-color-scheme: light)" />
-  <meta name="theme-color" content="#0b0c14" media="(prefers-color-scheme: dark)" />
+  <meta name="theme-color" content="#f3f5f9" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#070b1f" media="(prefers-color-scheme: dark)" />
   <script>
     /* App-Farbe vor dem ersten Zeichnen setzen (Akzent, Icon, Manifest) */
     (function () {
-      var c = 'galaxy';
+      var c = 'blau';
       try { c = localStorage.getItem('pulse.color') || c; } catch (e) {}
-      if (!/^(galaxy|stahl|aegypten|weiss)$/.test(c)) c = 'galaxy';
+      if (!/^(blau|hellblau)$/.test(c)) c = 'blau';
       document.documentElement.dataset.color = c;
       window.PULSE_COLOR = c;
     })();
@@ -363,9 +363,9 @@
     <section id="view-profile" class="view" aria-labelledby="h-profile">
       <h1 class="large-title" id="h-profile">Profil</h1>
 
-      <h2 class="group-title">App-Farbe</h2>
+      <h2 class="group-title">App-Icon</h2>
       <div class="card group">
-        <div class="color-pick" id="color-pick" role="radiogroup" aria-label="App-Farbe"></div>
+        <div class="color-pick" id="color-pick" role="radiogroup" aria-label="App-Icon"></div>
         <p class="muted color-hint" id="color-hint"></p>
       </div>
 

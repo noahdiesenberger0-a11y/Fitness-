@@ -4,9 +4,7 @@ Logo: 4 x 4 Kacheln wie im Aktivitätskalender. Jede Kachel hat eine Stufe (0 = 
 4 = viel) und einen eigenen schrägen Farbverlauf. Pro Variante entstehen in icons/<variante>/
 icon-192.png, icon-512.png, maskable-512.png, apple-touch-icon.png (180) und favicon-32.png.
 
-Zwei Farbwelten:
-  Sunrise: Galaxy Black, Stahlgrau, Sunrise-Orange mit Verlauf
-  Ägypten: Ägyptischblau, Steinblau, Scharlachrot, Weiß
+Farben: Ägyptischblau oder Hellblau (Steinblau) als Hintergrund, rote Kacheln mit Verlauf.
 """
 from pathlib import Path
 from PIL import Image, ImageDraw
@@ -19,34 +17,18 @@ PATTERN = [
     [3, 2, 4, 4],
 ]
 
-SUNRISE_CELLS = {  # Stufe: (Farbe oben links, Farbe unten rechts)
-    0: ('#3a3d43', '#4a4e55'),
-    1: ('#7a2e12', '#b2461a'),
-    2: ('#d4461a', '#ff7a2f'),
-    3: ('#ff6a2a', '#ffa64d'),
-    4: ('#ff9a3c', '#ffd98a'),
+# Nur Rot: Stufe 0 = dunkles Rot, Stufe 4 = helles Rot, jede Kachel mit eigenem Verlauf
+RED_CELLS = {  # Stufe: (Farbe oben links, Farbe unten rechts)
+    0: ('#6a0e1e', '#841326'),
+    1: ('#9c1229', '#bf1831'),
+    2: ('#cc1a33', '#e5233c'),
+    3: ('#e5233c', '#ff3d52'),
+    4: ('#ff3348', '#ff7482'),
 }
-EGYPT_CELLS = {
-    0: ('#2a4bb8', '#3557c4'),
-    1: ('#7d93ad', '#a9bacb'),
-    2: ('#e9eef5', '#ffffff'),
-    3: ('#ff4a2e', '#ff7a5c'),
-    4: ('#d4141c', '#ff2a1a'),
-}
-EGYPT_ON_WHITE = {
-    0: ('#e4e9f0', '#edf1f6'),
-    1: ('#9fb0c4', '#7d93ad'),
-    2: ('#1034a6', '#2a4fc4'),
-    3: ('#ff5a3c', '#ff2a1a'),
-    4: ('#c8101c', '#ff2400'),
-}
-SUNRISE_ON_STEEL = {**SUNRISE_CELLS, 0: ('#33363b', '#3b3e44')}
 
 VARIANTS = {  # Hintergrund (oben, unten), Kacheln
-    'galaxy':   (('#1a1b2e', '#08090f'), SUNRISE_CELLS),
-    'stahl':    (('#50545b', '#3a3d43'), SUNRISE_ON_STEEL),
-    'aegypten': (('#1a40b8', '#0c2a8a'), EGYPT_CELLS),
-    'weiss':    (('#ffffff', '#eef1f5'), EGYPT_ON_WHITE),
+    'blau':     (('#1a40b8', '#0c2a8a'), RED_CELLS),
+    'hellblau': (('#b4c3d4', '#8ea2ba'), RED_CELLS),
 }
 SS = 4  # Supersampling für glatte Kanten
 ROOT = Path(__file__).resolve().parent.parent / 'icons'

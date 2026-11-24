@@ -12,19 +12,19 @@
 
 :root {
   /* Farben – hell */
-  /* Farbwelt „Sunrise“ (Standard): Galaxy Black, Stahlgrau, Sunrise-Orange */
-  --bg: #f3f4f6;
+  /* Farbwelt: Ägyptischblau, Steinblau, Rot, Weiß */
+  --bg: #f3f5f9;
   --panel: #ffffff;
-  --panel2: #e9ebef;
-  --line: #dfe2e7;
-  --ink: #16171d;
-  --muted: #5d6170;
-  --accent: #b8470f;
+  --panel2: #e8ecf3;
+  --line: #dce2ec;
+  --ink: #0d1430;
+  --muted: #5a6480;
+  --accent: #1034a6;
   --on-accent: #ffffff;
   --danger: #b42318;
-  --heat0: #e6e8ec;
-  /* Kalender-Stufen, jede Kachel mit Verlauf wie im Logo */
-  --h1: #ffd2b0; --h2: #ffa765; --h3: #f2702c; --h4: #c94a12; --h4b: #ff8a3d;
+  --heat0: #e4e9f0;
+  /* Kalender-Stufen: nur Rot, jede Kachel mit Verlauf wie im Logo */
+  --h1: #f7c3c9; --h2: #f0808e; --h3: #e5233c; --h4: #b3102a; --h4b: #e5233c;
   --body: #c3bdb3; --body-far: #dcd8d0; --shine: #ffffff; --equip: #6b665e; --equip2: #9a948a; --plate: #2a2723;
 
   /* Schrift */
@@ -47,34 +47,18 @@
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #0b0c14;
-    --panel: #15161f;
-    --panel2: #20222b;
-    --line: #2a2c36;
-    --ink: #f1f2f6;
-    --muted: #9a9eab;
-    --accent: #ff8a3d;
-    --on-accent: #1a0b02;
+    --bg: #070b1f;
+    --panel: #0f1530;
+    --panel2: #1a2244;
+    --line: #232c52;
+    --ink: #eef2fa;
+    --muted: #9aa6c2;
+    --accent: #8aa4ff;
+    --on-accent: #070b1f;
     --danger: #ff7b6e;
-    --heat0: #262830;
-    --h1: #5a2a14; --h2: #a8461a; --h3: #ff7a2f; --h4: #ff9a3c; --h4b: #ffd98a;
+    --heat0: #1a2244;
+    --h1: #5c1426; --h2: #9c1229; --h3: #e5233c; --h4: #ff3348; --h4b: #ff7482;
     --body: #cfc9bf; --body-far: #6f6a62; --shine: #ffffff; --equip: #8d877d; --equip2: #4a4640; --plate: #3a3630;
-  }
-}
-
-/* ---------- Farbwelt „Ägypten“: Ägyptischblau, Steinblau, Scharlachrot, Weiß ---------- */
-:root[data-color="aegypten"], :root[data-color="weiss"] {
-  --bg: #f3f5f9; --panel: #ffffff; --panel2: #e8ecf3; --line: #dce2ec;
-  --ink: #0d1430; --muted: #5a6480; --heat0: #e4e9f0;
-  --accent: #1034a6; --on-accent: #ffffff;
-  --h1: #c3cfdd; --h2: #7d93ad; --h3: #1034a6; --h4: #e0201a; --h4b: #ff5a3c;
-}
-@media (prefers-color-scheme: dark) {
-  :root[data-color="aegypten"], :root[data-color="weiss"] {
-    --bg: #070b1f; --panel: #0f1530; --panel2: #1a2244; --line: #232c52;
-    --ink: #eef2fa; --muted: #9aa6c2; --heat0: #1a2244;
-    --accent: #8aa4ff; --on-accent: #070b1f;
-    --h1: #34456e; --h2: #7d93ad; --h3: #e9eef5; --h4: #ff2a1a; --h4b: #ff6a4c;
   }
 }
 
@@ -485,7 +469,7 @@ button, label.btn, .tabs, .chips, .list-row, .activity, .heatmap, .pr, .day-item
 .app-version { text-align: center; margin: var(--s-6) 0 var(--s-2); }
 
 /* App-Farbe */
-.color-pick { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--s-2); padding: var(--s-4) var(--s-3) var(--s-3); }
+.color-pick { display: grid; grid-template-columns: repeat(2, 1fr); max-width: 320px; margin: 0 auto; gap: var(--s-2); padding: var(--s-4) var(--s-3) var(--s-3); }
 .color-opt { display: flex; flex-direction: column; align-items: center; gap: var(--s-2); padding: 0; border: 0; background: none; color: var(--muted); font: 500 var(--t-label) var(--font); cursor: pointer; }
 .color-opt img { width: 60px; height: 60px; border-radius: 14px; outline: 2.5px solid transparent; outline-offset: 3px; transition: outline-color var(--t-hover) var(--ease), transform var(--t-press) var(--ease); }
 .color-opt:active img { transform: scale(.93); }

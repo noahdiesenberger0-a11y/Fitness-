@@ -848,22 +848,17 @@ function buildChips() {
 }
 
 /* ---------------- Profil: App-Farbe ---------------- */
-const APP_COLORS = { galaxy: 'Galaxy', stahl: 'Stahl', aegypten: 'Ägypten', weiss: 'Weiß' };
-const COLOR_WORLDS = [
-  { name: 'Sunrise', sub: 'Galaxy Black · Stahlgrau · Orange', colors: ['galaxy', 'stahl'] },
-  { name: 'Ägypten', sub: 'Ägyptischblau · Steinblau · Scharlach · Weiß', colors: ['aegypten', 'weiss'] },
-];
-function currentColor() { return document.documentElement.dataset.color || 'galaxy'; }
+const APP_COLORS = { blau: 'Blau', hellblau: 'Hellblau' };
+function currentColor() { return document.documentElement.dataset.color || 'blau'; }
 function renderProfile() {
   const c = currentColor();
-  $('#color-pick').innerHTML = COLOR_WORLDS.map((w) =>
-    `<div class="color-world">${w.name} <small>${w.sub}</small></div>` +
-    w.colors.map((k) => `<button class="color-opt" role="radio" aria-checked="${k === c}" data-color="${k}">
-      <img src="icons/${k}/icon-192.png" alt="" width="60" height="60" /><span>${APP_COLORS[k]}</span></button>`).join('')).join('');
+  $('#color-pick').innerHTML = Object.entries(APP_COLORS).map(([k, name]) =>
+    `<button class="color-opt" role="radio" aria-checked="${k === c}" data-color="${k}">
+      <img src="icons/${k}/icon-192.png" alt="" width="60" height="60" /><span>${name}</span></button>`).join('');
   const standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone;
   $('#color-hint').textContent = standalone
-    ? 'Die Farbe gilt sofort in der App. Für das neue Icon auf dem Home-Bildschirm: Pulse dort entfernen und über Teilen → „Zum Home-Bildschirm“ neu hinzufügen. Deine Daten bleiben erhalten.'
-    : 'Die Farbe gilt für die App und für das Icon, wenn du Pulse zum Home-Bildschirm hinzufügst.';
+    ? 'Für das neue Icon auf dem Home-Bildschirm: Pulse dort entfernen und über Teilen → „Zum Home-Bildschirm“ neu hinzufügen. Deine Daten bleiben erhalten.'
+    : 'Dieses Icon bekommt Pulse, wenn du es zum Home-Bildschirm hinzufügst.';
 }
 function setColor(c) {
   if (!APP_COLORS[c]) return;
