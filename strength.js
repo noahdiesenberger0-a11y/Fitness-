@@ -10,22 +10,22 @@
  *        'bottom' → Übung beginnt unten, erst hoch (Ziehen, Curls, Kreuzheben …)
  */
 const EXERCISES = [
-  { id: 'bench',    name: 'Bankdrücken',          start: 'top' },
-  { id: 'squat',    name: 'Kniebeugen',           start: 'top' },
-  { id: 'deadlift', name: 'Kreuzheben',           start: 'bottom' },
-  { id: 'ohp',      name: 'Schulterdrücken',      start: 'top' },
-  { id: 'row',      name: 'Langhantelrudern',     start: 'bottom' },
-  { id: 'pullup',   name: 'Klimmzüge',            start: 'bottom' },
-  { id: 'pushup',   name: 'Liegestütze',          start: 'top' },
-  { id: 'dips',     name: 'Dips',                 start: 'top' },
-  { id: 'curl',     name: 'Bizeps-Curls',         start: 'bottom' },
-  { id: 'lunge',    name: 'Ausfallschritte',      start: 'top' },
-  { id: 'legpress', name: 'Beinpresse',           start: 'top' },
-  { id: 'latpull',  name: 'Latzug',               start: 'bottom' },
-  { id: 'incline',  name: 'Schrägbankdrücken',    start: 'top' },
-  { id: 'triceps',  name: 'Trizepsdrücken',       start: 'bottom' },
-  { id: 'calf',     name: 'Wadenheben',           start: 'bottom' },
-  { id: 'custom',   name: 'Eigene Übung …',       start: 'top' },
+  { id: 'bench',    name: 'Bankdrücken',          start: 'top', con: 'Drücken', ecc: 'Runter' },
+  { id: 'squat',    name: 'Kniebeugen',           start: 'top', con: 'Hoch', ecc: 'Runter' },
+  { id: 'deadlift', name: 'Kreuzheben',           start: 'bottom', con: 'Hoch', ecc: 'Ablassen' },
+  { id: 'ohp',      name: 'Schulterdrücken',      start: 'top', con: 'Drücken', ecc: 'Runter' },
+  { id: 'row',      name: 'Langhantelrudern',     start: 'bottom', con: 'Ziehen', ecc: 'Ablassen' },
+  { id: 'pullup',   name: 'Klimmzüge',            start: 'bottom', con: 'Ziehen', ecc: 'Ablassen' },
+  { id: 'pushup',   name: 'Liegestütze',          start: 'top', con: 'Drücken', ecc: 'Runter' },
+  { id: 'dips',     name: 'Dips',                 start: 'top', con: 'Drücken', ecc: 'Runter' },
+  { id: 'curl',     name: 'Bizeps-Curls',         start: 'bottom', con: 'Hoch', ecc: 'Runter' },
+  { id: 'lunge',    name: 'Ausfallschritte',      start: 'top', con: 'Hoch', ecc: 'Runter' },
+  { id: 'legpress', name: 'Beinpresse',           start: 'top', con: 'Drücken', ecc: 'Beugen' },
+  { id: 'latpull',  name: 'Latzug',               start: 'bottom', con: 'Ziehen', ecc: 'Nachlassen' },
+  { id: 'incline',  name: 'Schrägbankdrücken',    start: 'top', con: 'Drücken', ecc: 'Runter' },
+  { id: 'triceps',  name: 'Trizepsdrücken',       start: 'bottom', con: 'Drücken', ecc: 'Zurück' },
+  { id: 'calf',     name: 'Wadenheben',           start: 'bottom', con: 'Hoch', ecc: 'Runter' },
+  { id: 'custom',   name: 'Eigene Übung …',       start: 'top', con: 'Hoch', ecc: 'Runter' },
 ];
 
 const ST_KEY = 'pulse.strength';
@@ -95,7 +95,7 @@ function renderPlan() {
   $('#st-plan-sum').textContent = list.length ? `${totalSets} Sätze · ca. ${Math.round(estSec / 60)} min` : '';
   $('#st-plan').innerHTML = list.length ? list.map((e, i) => `
     <div class="plan-item">
-      <div class="plan-num">${i + 1}</div>
+      <svg class="model plan-thumb" viewBox="${modelViewBox(e.exId)}" aria-hidden="true">${modelSvg(e.exId, 0.5)}</svg>
       <div class="plan-body">
         <div class="plan-name">${esc(e.name)}</div>
         <div class="muted">${e.sets} × ${e.reps} Wdh. · ${e.weight ? String(e.weight).replace('.', ',') + ' kg' : 'Körpergewicht'} · Tempo ${esc(e.tempo)} · Pause ${fmtDur(e.rest)}</div>
@@ -168,11 +168,14 @@ const W = { active: false, paused: false, stage: 'idle', exIdx: 0, setIdx: 0, st
 const curEx = () => plan.plan[W.exIdx];
 
 /** Phasen einer Wiederholung je nach Startposition. pos: 0 = unten, 1 = oben */
+const exDef = (ex) => EXERCISES.find((e) => e.id === ex.exId) || EXERCISES[EXERCISES.length - 1];
+
 function phasesFor(ex) {
   const t = parseTempo(ex.tempo);
-  const down = { key: 'down', label: 'Runter', ms: t.down * 1000, from: 1, to: 0 };
+  const def = exDef(ex);
+  const down = { key: 'down', label: def.ecc || 'Runter', ms: t.down * 1000, from: 1, to: 0 };
   const holdB = { key: 'holdB', label: 'Halten', ms: t.holdBottom * 1000, from: 0, to: 0 };
-  const up = { key: 'up', label: 'Hoch', ms: t.up * 1000, from: 0, to: 1 };
+  const up = { key: 'up', label: def.con || 'Hoch', ms: t.up * 1000, from: 0, to: 1 };
   const holdT = { key: 'holdT', label: 'Halten', ms: t.holdTop * 1000, from: 1, to: 1 };
   const seq = ex.start === 'top' ? [down, holdB, up, holdT] : [up, holdT, down, holdB];
   return seq.filter((p) => p.ms > 0);
@@ -312,10 +315,12 @@ function updateRest() {
   if (left <= 0) nextSet();
 }
 
-/** Position der Hantel: 0 = unten, 1 = oben */
+/** Figur zeichnen: 0 = Startposition, 1 = Endposition der Bewegung */
 function setBar(pos) {
-  const y = 220 - pos * 180;
-  $('#pl-bar').setAttribute('transform', `translate(0 ${y.toFixed(1)})`);
+  const svg = $('#pl-anim');
+  const vb = modelViewBox(curEx().exId);
+  if (svg.getAttribute('viewBox') !== vb) svg.setAttribute('viewBox', vb);
+  svg.innerHTML = modelSvg(curEx().exId, pos);
 }
 
 function renderRep() {
@@ -332,6 +337,8 @@ function renderPlayerStatic() {
   $('#pl-rest').classList.toggle('hidden', !resting);
   $('#pl-ctrl').classList.toggle('hidden', resting);
   $('#pl-reps').textContent = ex.reps;
+  $('#pl-muscles').innerHTML = modelMuscleNames(ex.exId).map((m) => `<span>${m}</span>`).join('');
+  if (!resting && W.stage === 'countdown') setBar(ex.start === 'top' ? 1 : 0);
   if (W.stage !== 'set') { W.repsDone = 0; }
   $('#pl-rep').textContent = W.repsDone;
   // Satz-Anzeige
@@ -419,12 +426,37 @@ function resetStrengthView() {
   renderPlan();
 }
 
+/* ---------------- Vorschau beim Hinzufügen ---------------- */
+let previewRaf = 0;
+function previewLoop(ts) {
+  const view = $('#view-strength');
+  if (view.classList.contains('active') && !W.active && !$('#st-setup').classList.contains('hidden')) {
+    const id = $('#st-exercise').value;
+    const def = EXERCISES.find((e) => e.id === id);
+    // 4-Sekunden-Schleife: Start → Ende → Start, weich
+    const t = (ts % 4000) / 4000;
+    let pos = 0.5 - Math.cos(t * 2 * Math.PI) / 2;
+    if (def.start === 'top') pos = 1 - pos;
+    const svg = $('#st-preview');
+    const vb = modelViewBox(id);
+    if (svg.getAttribute('viewBox') !== vb) svg.setAttribute('viewBox', vb);
+    svg.innerHTML = modelSvg(id, pos);
+  }
+  previewRaf = requestAnimationFrame(previewLoop);
+}
+function updatePreviewMuscles() {
+  $('#st-preview-muscles').innerHTML = modelMuscleNames($('#st-exercise').value).map((m) => `<span>${m}</span>`).join('');
+}
+
 /* ---------------- Events ---------------- */
 function initStrength() {
   $('#st-exercise').innerHTML = EXERCISES.map((e) => `<option value="${e.id}">${e.name}</option>`).join('');
   $('#st-exercise').addEventListener('change', (e) => {
     $('#st-custom-wrap').classList.toggle('hidden', e.target.value !== 'custom');
+    updatePreviewMuscles();
   });
+  updatePreviewMuscles();
+  previewRaf = requestAnimationFrame(previewLoop);
   $('#st-tempo').addEventListener('change', (e) => {
     $('#st-tempo-custom-wrap').classList.toggle('hidden', e.target.value !== 'custom');
   });

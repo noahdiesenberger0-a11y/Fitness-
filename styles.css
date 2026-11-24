@@ -274,3 +274,33 @@ body.training .tabs { pointer-events: none; opacity: .4; }
   .tabs button { font-size: 10px; }
   .pl-count { font-size: 64px; }
 }
+
+/* ---------- Übungs-Modelle (Figuren) ---------- */
+:root { --body: #c9d1d9; --body-far: #7d8590; --shine: #ffffff; --equip: #6e7681; --equip2: #484f58; --plate: #30363d; }
+@media (prefers-color-scheme: light) {
+  :root { --body: #aeb8c4; --body-far: #d5dbe2; --shine: #ffffff; --equip: #57606a; --equip2: #8c959f; --plate: #24292f; }
+}
+.model line { stroke-linecap: round; }
+.model .m-body { stroke: var(--body); }
+.model .m-far { stroke: var(--body-far); }
+.model .m-shine { stroke: var(--shine); opacity: .28; }
+.model .m-head { fill: var(--body); }
+.model .m-hand { fill: var(--body); }
+.model .m-muscle { stroke: var(--accent); opacity: .92; }
+.model .m-muscle.far { opacity: .45; }
+.model .m-floor { stroke: var(--border); stroke-width: 2; }
+.model .m-shadow { fill: var(--text); opacity: .07; }
+.model .m-equip { fill: var(--equip); }
+.model .m-equip2 { fill: var(--equip2); }
+.model .m-equip-line { stroke: var(--equip); }
+.model .m-cable { stroke: var(--muted); }
+.model .m-bar { fill: var(--equip); }
+.model .m-plate { fill: var(--plate); stroke: var(--equip); stroke-width: 2.5; opacity: .93; }
+.model .m-plate.far { opacity: .5; }
+.model .m-plate-in { fill: var(--equip); }
+.pl-anim.model { max-width: 340px; }
+.muscle-tags { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin: 2px 0 6px; }
+.muscle-tags span { font-size: 12px; padding: 2px 10px; border-radius: 12px; color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, transparent); font-weight: 600; }
+.ex-preview { background: var(--panel2); border-radius: 12px; padding: 6px 6px 8px; }
+.ex-preview svg { width: 100%; max-height: 220px; display: block; }
+.plan-thumb { width: 64px; height: 54px; flex-shrink: 0; background: var(--panel2); border-radius: 8px; }

@@ -140,6 +140,10 @@
           <label>Übung
             <select name="exercise" id="st-exercise"></select>
           </label>
+          <div class="ex-preview">
+            <svg class="model" id="st-preview" viewBox="0 -24 300 250" aria-hidden="true"></svg>
+            <div class="muscle-tags" id="st-preview-muscles"></div>
+          </div>
           <label class="hidden" id="st-custom-wrap">Name der Übung <input name="custom" placeholder="z.B. Beinpresse" /></label>
           <div class="steppers">
             <label>Sätze <div class="stepper"><button type="button" data-step="sets:-1">−</button><input name="sets" type="number" inputmode="numeric" min="1" max="20" value="3" /><button type="button" data-step="sets:1">+</button></div></label>
@@ -187,20 +191,8 @@
 
           <div class="pl-stage" id="pl-stage">
             <div class="pl-phase" id="pl-phase">Bereit</div>
-            <svg class="pl-anim" id="pl-anim" viewBox="0 0 240 260" aria-hidden="true">
-              <line class="pl-track" x1="120" y1="40" x2="120" y2="220" />
-              <line class="pl-mark" x1="96" y1="40" x2="144" y2="40" />
-              <line class="pl-mark" x1="96" y1="220" x2="144" y2="220" />
-              <text class="pl-marktxt" x="150" y="44">oben</text>
-              <text class="pl-marktxt" x="150" y="224">unten</text>
-              <g id="pl-bar">
-                <rect class="pl-barbell" x="20" y="-4" width="200" height="8" rx="3" />
-                <rect class="pl-plate" x="34" y="-26" width="14" height="52" rx="3" />
-                <rect class="pl-plate" x="50" y="-19" width="9" height="38" rx="2" />
-                <rect class="pl-plate" x="192" y="-26" width="14" height="52" rx="3" />
-                <rect class="pl-plate" x="181" y="-19" width="9" height="38" rx="2" />
-              </g>
-            </svg>
+            <svg class="pl-anim model" id="pl-anim" viewBox="0 -24 300 250" aria-hidden="true"></svg>
+            <div class="muscle-tags" id="pl-muscles"></div>
             <div class="pl-phasebar"><i id="pl-phasefill"></i></div>
             <div class="pl-count"><span id="pl-rep">0</span><small> / <span id="pl-reps">8</span></small></div>
             <div class="muted">Wiederholungen</div>
@@ -297,6 +289,7 @@
   <div class="toast hidden" id="toast"></div>
 
   <script src="app.js"></script>
+  <script src="models.js"></script>
   <script src="strength.js"></script>
 </body>
 </html>

@@ -14,7 +14,8 @@ in dem du siehst, an welchen Tagen du trainiert hast.
 - **Splits**: km-Splits mit Pace, Unterschied zum vorherigen km, schnellstem km ⚡ und Erkennung von Negativ-Splits
 - **GPS-Aufzeichnung**: Live-Tracking im Browser mit Zeit, Distanz, Pace, automatischen km-Splits (mit Vibration) und Routenskizze
 - **Kraft-Modus** 🏋️: Training aus Übungen zusammenstellen (z. B. Bankdrücken 3 × 8 mit 60 kg)
-  - Eine Animation gibt das **Tempo** jeder Wiederholung vor (z. B. 3 s runter, 1 s halten, 1 s hoch)
+  - Eine **animierte Figur** macht jede Übung im eingestellten **Tempo** vor (z. B. 3 s runter, 1 s halten, 1 s hoch), mit Gerät (Hantel, Bank, Stange, Kabelzug …) und farbig markierten Muskeln
+  - Die Figuren sind selbst gebaut: ein Skelett aus Gelenkwinkeln, berechnet im Code (`models.js`), keine Bilddateien
   - Zählt Wiederholungen und Sätze mit, auf Wunsch mit Signaltönen, Sprachausgabe und Vibration
   - Automatische **Satzpause** mit Countdown, tatsächlich geschaffte Wiederholungen lassen sich anpassen
   - Speichert Sätze, Gewicht und Volumen, Bestleistungen pro Übung
@@ -71,6 +72,7 @@ Alle Daten bleiben lokal im Browser bzw. in der App (`localStorage`). Mit **Expo
 | `styles.css`   | Design (dunkel/hell, mobil)                   |
 | `app.js`       | Logik: Streaks, Heatmap, Splits, GPS, Statistik |
 | `strength.js`  | Kraft-Modus: Sätze, Wiederholungen, Tempo-Animation |
+| `models.js`    | Animierte Übungs-Figuren (Posen, Muskeln, Geräte) |
 | `manifest.json`| Web-App-Manifest (Name, Icons, Vollbild, Shortcuts) |
 | `sw.js`        | Service Worker für den Offline-Betrieb        |
 | `icons/`       | App-Icons                                     |
