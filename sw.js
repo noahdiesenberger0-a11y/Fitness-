@@ -1,7 +1,8 @@
 /* Service Worker: macht Pulse offline nutzbar. Bei Änderungen VERSION erhöhen. */
 const VERSION = 'pulse-v8';
 const ASSETS = [
-  './', './index.html', './styles.css', './app.js', './models.js', './strength.js', './manifest.json',
+  './', './index.html', './styles.css', './app.js', './models.js', './exercises.js', './coach.js',
+  './workout.js', './splits.js', './progress.js', './cloud.js', './vendor/supabase-2.119.0.js', './manifest.json',
   './manifest-blau.json', './manifest-hellblau.json',
   ...['blau', 'hellblau'].flatMap((c) => ['icon-192.png', 'apple-touch-icon.png', 'favicon-32.png'].map((f) => `./icons/${c}/${f}`)),
   './icons/icon-192.png', './icons/icon-512.png', './icons/maskable-512.png',

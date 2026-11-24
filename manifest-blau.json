@@ -1,7 +1,7 @@
 {
-  "name": "Pulse – Fitness Tracker",
+  "name": "Pulse – Krafttraining",
   "short_name": "Pulse",
-  "description": "Trainings tracken mit Streaks, Splits und Aktivitätskalender",
+  "description": "Krafttraining tracken: Splits bauen, Sätze abhaken, Fortschritt sehen",
   "lang": "de",
   "id": "./",
   "start_url": "./index.html",
@@ -35,8 +35,8 @@
   ],
   "shortcuts": [
     {
-      "name": "Aufzeichnen",
-      "url": "./index.html#record",
+      "name": "Training",
+      "url": "./index.html#train",
       "icons": [
         {
           "src": "icons/blau/icon-192.png",
@@ -45,18 +45,8 @@
       ]
     },
     {
-      "name": "Krafttraining",
-      "url": "./index.html#strength",
-      "icons": [
-        {
-          "src": "icons/blau/icon-192.png",
-          "sizes": "192x192"
-        }
-      ]
-    },
-    {
-      "name": "Eintragen",
-      "url": "./index.html#add",
+      "name": "Fortschritt",
+      "url": "./index.html#progress",
       "icons": [
         {
           "src": "icons/blau/icon-192.png",

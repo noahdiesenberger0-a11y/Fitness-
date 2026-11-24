@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#f3f5f9" media="(prefers-color-scheme: light)" />
   <meta name="theme-color" content="#070b1f" media="(prefers-color-scheme: dark)" />
   <script>
-    /* App-Farbe vor dem ersten Zeichnen setzen (Akzent, Icon, Manifest) */
+    /* Gewähltes App-Icon vor dem ersten Zeichnen setzen */
     (function () {
       var c = 'blau';
       try { c = localStorage.getItem('pulse.color') || c; } catch (e) {}
@@ -15,10 +15,10 @@
       window.PULSE_COLOR = c;
     })();
   </script>
-  <title>Pulse: Trainingstagebuch mit Streaks, Splits und Krafttraining</title>
-  <meta name="description" content="Trainings tracken: Aktivitätskalender, Streaks, km-Splits, GPS-Aufzeichnung und Krafttraining mit Tempo-Animation." />
-  <meta property="og:title" content="Pulse – Trainingstagebuch" />
-  <meta property="og:description" content="Aktivitätskalender, Streaks, Splits und Krafttraining mit Tempo-Animation." />
+  <title>Pulse: Krafttraining tracken, Splits bauen, Fortschritt sehen</title>
+  <meta name="description" content="Krafttraining tracken wie bei Strava: eigene Splits bauen, Sätze abhaken, Rekorde und Fortschritt sehen. Mit animierten Übungs-Figuren." />
+  <meta property="og:title" content="Pulse – Krafttraining" />
+  <meta property="og:description" content="Splits bauen, Sätze abhaken, Fortschritt sehen." />
   <meta property="og:image" content="icons/icon-512.png" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -72,10 +72,17 @@
       <symbol id="i-hike" viewBox="0 0 24 24"><path d="M2.5 19.5L9 9l4 6.5 2.5-4 6 8z"/><circle cx="17" cy="5.5" r="1.8"/></symbol>
       <symbol id="i-walk" viewBox="0 0 24 24"><circle cx="12.5" cy="4.5" r="1.8"/><path d="M12 8l-1.5 6 3 3v4M12 8l3 3.5 2.5.5M11.5 8.5L8 11v3M10.5 14l-2.5 7"/></symbol>
       <symbol id="i-yoga" viewBox="0 0 24 24"><circle cx="12" cy="4.5" r="1.8"/><path d="M12 8v6M4.5 10.5l7.5 2 7.5-2M7 19.5l5-5.5 5 5.5M4.5 19.5h15"/></symbol>
-      <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4.5 20.5a7.5 7.5 0 0 1 15 0"/></symbol>
+      <symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13 3L5.5 13.5h6L10.5 21 18 10.5h-6z"/></symbol>
+      <symbol id="i-compass" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/></symbol>
+      <symbol id="i-chart" viewBox="0 0 24 24"><path d="M3.5 19.5h17M5.5 15.5l4.5-5 3.5 3 6-7"/></symbol>
+      <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8.5" r="4"/><path d="M4.5 20.5c.8-3.8 3.8-6 7.5-6s6.7 2.2 7.5 6"/></symbol>
+      <symbol id="i-trophy" viewBox="0 0 24 24"><path d="M7.5 4.5h9v5a4.5 4.5 0 0 1-9 0z M7.5 6.5H4.5a3 3 0 0 0 3 4 M16.5 6.5h3a3 3 0 0 1-3 4 M12 14v3.5 M8.5 20h7 M9.5 17.5h5"/></symbol>
+      <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8.5" y="8.5" width="11" height="11" rx="2"/><path d="M15.5 8.5V6a1.5 1.5 0 0 0-1.5-1.5H6A1.5 1.5 0 0 0 4.5 6v8A1.5 1.5 0 0 0 6 15.5h2.5"/></symbol>
+      <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5.5" cy="12" r="1.3" class="fill"/><circle cx="12" cy="12" r="1.3" class="fill"/><circle cx="18.5" cy="12" r="1.3" class="fill"/></symbol>
+      <symbol id="i-swap" viewBox="0 0 24 24"><path d="M4.5 8.5h14M15 5l3.5 3.5L15 12M19.5 15.5h-14M9 12l-3.5 3.5L9 19"/></symbol>
       <symbol id="i-chevron" viewBox="0 0 24 24"><path d="M9.5 6l6 6-6 6"/></symbol>
       <symbol id="i-back" viewBox="0 0 24 24"><path d="M14.5 6l-6 6 6 6"/></symbol>
-      <symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13 3L5.5 13.5h6L10.5 21 18 10.5h-6z"/></symbol>
+      <symbol id="i-timer" viewBox="0 0 24 24"><circle cx="12" cy="13.5" r="7"/><path d="M12 13.5V10M9.5 3.5h5M18 7l1.5-1.5"/></symbol>
     </defs>
   </svg>
 
@@ -84,41 +91,165 @@
   <header class="topbar">
     <button class="nav-back hidden" id="nav-back" aria-label="Zurück"><svg class="i" aria-hidden="true"><use href="#i-back"/></svg></button>
     <div class="brand"><svg class="i logo" aria-hidden="true"><use href="#i-logo"/></svg>Pulse</div>
-    <div class="nav-title" id="nav-title" aria-hidden="true">Start</div>
+    <div class="nav-title" id="nav-title" aria-hidden="true">Training</div>
     <nav class="tabs" id="tabs" aria-label="Hauptnavigation">
-      <button data-view="dashboard" class="active"><svg class="i" aria-hidden="true"><use href="#i-home"/></svg><span>Start</span></button>
-      <button data-view="feed"><svg class="i" aria-hidden="true"><use href="#i-list"/></svg><span>Aktivitäten</span></button>
-      <button data-view="record" class="tab-rec"><span class="rec-btn"><svg class="i rec-dot" aria-hidden="true"><use href="#i-record"/></svg></span><span>Aufzeichnen</span></button>
-      <button data-view="strength"><svg class="i" aria-hidden="true"><use href="#i-dumbbell"/></svg><span>Kraft</span></button>
+      <button data-view="train" class="active"><svg class="i" aria-hidden="true"><use href="#i-dumbbell"/></svg><span>Training</span></button>
+      <button data-view="splits"><svg class="i" aria-hidden="true"><use href="#i-list"/></svg><span>Splits</span></button>
+      <button data-view="discover"><svg class="i" aria-hidden="true"><use href="#i-compass"/></svg><span>Entdecken</span></button>
+      <button data-view="progress"><svg class="i" aria-hidden="true"><use href="#i-chart"/></svg><span>Fortschritt</span></button>
       <button data-view="profile"><svg class="i" aria-hidden="true"><use href="#i-user"/></svg><span>Profil</span></button>
     </nav>
   </header>
 
   <main id="main">
     <div class="card install hidden" id="install">
-      <img src="icons/icon-192.png" alt="" width="40" height="40" />
+      <img src="icons/icon-192.png" alt="" width="40" height="40" id="install-icon" />
       <div class="install-body">
         <div id="install-text"></div>
         <button class="btn primary hidden" id="install-btn">App installieren</button>
       </div>
-      <button class="icon-btn ghostless install-close" id="install-close" aria-label="Hinweis schließen"><svg class="i" aria-hidden="true"><use href="#i-x"/></svg></button>
+      <button class="icon-btn install-close" id="install-close" aria-label="Hinweis schließen"><svg class="i" aria-hidden="true"><use href="#i-x"/></svg></button>
     </div>
 
-    <!-- ÜBERSICHT -->
-    <section id="view-dashboard" class="view active" aria-labelledby="h-dashboard">
-      <h1 class="large-title" id="h-dashboard">Start</h1>
-
-      <div class="card welcome hidden" id="welcome">
-        <h2>Willkommen bei Pulse</h2>
-        <p class="muted">Trag dein erstes Training ein, zeichne einen Lauf mit GPS auf oder sieh dir die App mit Beispieldaten an.</p>
-        <div class="form-actions">
-          <button class="btn primary" data-goto="add"><svg class="i" aria-hidden="true"><use href="#i-plus"/></svg>Aktivität eintragen</button>
-          <button class="btn" data-goto="record"><svg class="i" aria-hidden="true"><use href="#i-record"/></svg>Lauf aufzeichnen</button>
-          <button class="btn" data-demo>Beispieldaten laden</button>
+    <!-- TRAINING -->
+    <section id="view-train" class="view active" aria-labelledby="h-train">
+      <div id="tr-home">
+        <h1 class="large-title" id="h-train">Training</h1>
+        <div class="card welcome hidden" id="welcome">
+          <h2>Willkommen bei Pulse</h2>
+          <p class="muted">Bau dir deinen Split, hak deine Sätze ab und sieh, wie du stärker wirst. Oder schau dir die App erst mit Beispieldaten an.</p>
+          <div class="form-actions">
+            <button class="btn primary" data-view="splits"><svg class="i" aria-hidden="true"><use href="#i-list"/></svg>Split wählen</button>
+            <button class="btn" data-demo>Beispieldaten laden</button>
+          </div>
         </div>
+
+        <div class="card next-card" id="tr-next"></div>
+
+        <div class="week-row" id="tr-week"></div>
+
+        <div class="quick">
+          <button class="btn" data-start-empty><svg class="i" aria-hidden="true"><use href="#i-plus"/></svg>Freies Training</button>
+          <button class="btn" data-new-cardio><svg class="i" aria-hidden="true"><use href="#i-run"/></svg>Cardio eintragen</button>
+        </div>
+
+        <div class="page-head" id="tr-feed-head"><h2>Letzte Trainings</h2><button class="link-btn" data-view="profile">Alle ansehen</button></div>
+        <div class="feed" id="tr-feed"></div>
       </div>
 
-      <!-- Streak + Kalender: ein Block -->
+      <!-- Laufendes Training -->
+      <div id="tr-live" class="hidden">
+        <div class="live-head">
+          <div class="live-top">
+            <div><h1 id="lv-title">Training</h1><div class="muted" id="lv-sub"></div></div>
+            <button class="btn primary" id="lv-finish"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg>Fertig</button>
+          </div>
+          <div class="live-stats">
+            <span><svg class="i" aria-hidden="true"><use href="#i-timer"/></svg><b class="num" id="lv-clock">0:00</b></span>
+            <span><svg class="i" aria-hidden="true"><use href="#i-dumbbell"/></svg><b class="num" id="lv-vol">0 kg</b></span>
+          </div>
+          <div class="live-progress"><i id="lv-progress"></i></div>
+        </div>
+        <div id="lv-list"></div>
+        <button class="btn wide" id="lv-add"><svg class="i" aria-hidden="true"><use href="#i-plus"/></svg>Übung hinzufügen</button>
+      </div>
+    </section>
+
+    <!-- SPLITS -->
+    <section id="view-splits" class="view" aria-labelledby="h-splits">
+      <div class="page-head"><h1 class="large-title" id="h-splits">Splits</h1>
+        <button class="icon-btn round" data-new-split aria-label="Eigener Split"><svg class="i" aria-hidden="true"><use href="#i-plus"/></svg></button></div>
+      <div class="split-grid" id="sp-mine"></div>
+      <div class="page-head sub"><h2>Vorlagen</h2><span class="muted">Übernehmen und nach Lust anpassen</span></div>
+      <div class="split-grid" id="sp-templates"></div>
+      <button class="card soon" data-view="discover">
+        <svg class="i" aria-hidden="true"><use href="#i-compass"/></svg>
+        <span><b>Splits von anderen entdecken</b>
+          <span class="muted">Sieh, wer mit welchem Split am meisten Fortschritt macht, und übernimm ihn mit einem Tipp.</span></span>
+      </button>
+    </section>
+
+    <!-- ENTDECKEN -->
+    <section id="view-discover" class="view" aria-labelledby="h-discover">
+      <div class="page-head"><h1 class="large-title" id="h-discover">Entdecken</h1>
+        <button class="icon-btn" data-dc-reload aria-label="Neu laden"><svg class="i" aria-hidden="true"><use href="#i-swap"/></svg></button></div>
+      <p class="muted" id="dc-status" role="status"></p>
+      <div class="card login-hint hidden" id="dc-login">
+        <div><b>Zeig deinen Fortschritt</b>
+          <p class="muted">Mit einem Konto erscheinst du hier, sobald du ein paar Wochen mit einem Split trainiert hast.</p></div>
+        <button class="btn primary" data-auth="signup">Konto erstellen</button>
+      </div>
+      <div class="card empty hidden" id="dc-offline"><p>Die Cloud ist gerade nicht erreichbar.</p></div>
+      <div id="dc-content">
+        <div class="page-head sub first"><h2>Krasser Fortschritt</h2><span class="muted">Ø geschätztes 1RM seit Start</span></div>
+        <div class="card people" id="dc-people"></div>
+        <div class="page-head sub"><h2>Splits</h2>
+          <div class="seg" id="dc-sort" role="group" aria-label="Sortieren">
+            <button data-dc-sort="progress" class="active">Fortschritt</button><button data-dc-sort="people">Beliebt</button>
+          </div></div>
+        <div class="split-grid" id="dc-splits"></div>
+        <p class="muted dc-note">Fortschritt = durchschnittliche Steigerung des geschätzten Maximalgewichts (1RM) über alle Übungen, die mindestens dreimal trainiert wurden. Beispieldaten zählen nicht.</p>
+      </div>
+    </section>
+
+    <!-- SPLIT-BAUKASTEN -->
+    <section id="view-split-edit" class="view" aria-labelledby="se-title">
+      <div class="page-head"><h1 class="large-title" id="se-title">Neuer Split</h1></div>
+      <div class="card form" id="se-meta"></div>
+      <div id="se-days"></div>
+      <button class="btn wide" data-add-day><svg class="i" aria-hidden="true"><use href="#i-plus"/></svg>Tag hinzufügen</button>
+      <div class="sticky-actions">
+        <button class="btn" data-cancel-split>Abbrechen</button>
+        <button class="btn primary" data-save-split><svg class="i" aria-hidden="true"><use href="#i-check"/></svg>Split speichern</button>
+      </div>
+    </section>
+
+    <!-- FORTSCHRITT -->
+    <section id="view-progress" class="view" aria-labelledby="h-progress">
+      <div class="page-head"><h1 class="large-title" id="h-progress">Fortschritt</h1></div>
+      <div class="card empty hidden" id="pg-empty">
+        <p>Nach deinem ersten Training siehst du hier, wie du stärker wirst.</p>
+        <button class="btn" data-demo>Beispieldaten laden</button>
+      </div>
+      <div id="pg-content">
+        <div class="card" id="pg-ex-card">
+          <div class="card-head">
+            <label class="sr-only" for="pg-ex">Übung</label>
+            <select id="pg-ex" class="select-lg"></select>
+            <div class="seg" id="pg-metric" role="group" aria-label="Kennzahl"></div>
+          </div>
+          <div class="hero" id="pg-hero"></div>
+          <div id="pg-chart"></div>
+          <details class="table-toggle"><summary>Als Tabelle</summary><div id="pg-table"></div></details>
+        </div>
+        <div class="grid2">
+          <div class="card">
+            <div class="card-head"><h2>Sätze pro Muskel</h2><span class="muted">diese Woche · Richtwert 10–20</span></div>
+            <div id="pg-muscles"></div>
+          </div>
+          <div class="card">
+            <div class="card-head"><h2>Volumen pro Woche</h2><span class="muted">letzte 12 Wochen</span></div>
+            <div class="weekchart" id="pg-weeks"></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-head"><h2>Rekorde</h2><span class="muted">geschätztes 1RM</span></div>
+          <div class="prs" id="pg-records"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PROFIL -->
+    <section id="view-profile" class="view" aria-labelledby="pf-name">
+      <div class="profile-head">
+        <div class="avatar lg" id="pf-avatar" aria-hidden="true">D</div>
+        <div class="pf-body">
+          <h1 id="pf-name">Du</h1>
+          <div class="muted" id="pf-sub"></div>
+        </div>
+        <button class="icon-btn" id="pf-edit" aria-label="Namen ändern"><svg class="i" aria-hidden="true"><use href="#i-edit"/></svg></button>
+      </div>
+
       <div class="card streak-card">
         <div class="streak-top">
           <div class="streak-main">
@@ -132,236 +263,50 @@
             <div><dt>Skips im letzten Jahr</dt><dd id="st-skips">0</dd></div>
           </dl>
         </div>
-
         <div class="heat-block">
           <div class="card-head">
-            <h2 id="contrib-title">0 Aktivitäten im letzten Jahr</h2>
-            <select id="heat-filter" hidden><option value="">Alle Sportarten</option></select>
+            <h2 id="contrib-title">0 Einheiten im letzten Jahr</h2>
+            <select id="heat-filter" hidden><option value="">Alles</option><option value="strength">Kraft</option><option value="cardio">Cardio</option></select>
           </div>
-          <div class="chips" data-for="heat-filter" role="group" aria-label="Sportart filtern"></div>
-          <div class="heatmap-wrap">
-            <div class="heatmap" id="heatmap"></div>
-          </div>
+          <div class="chips" data-for="heat-filter" role="group" aria-label="Filtern"></div>
+          <div class="heatmap-wrap"><div class="heatmap" id="heatmap"></div></div>
           <div class="heat-legend">
-            <span class="legend-marks">
-              <span><i class="cell rest"></i> Ruhetag</span>
-              <span><i class="cell skip"></i> Skip</span>
-            </span>
+            <span class="legend-marks"><span><i class="cell rest"></i> Ruhetag</span><span><i class="cell skip"></i> Skip</span></span>
             <span class="legend-scale">Weniger <i class="cell l0"></i><i class="cell l1"></i><i class="cell l2"></i><i class="cell l3"></i><i class="cell l4"></i> Mehr</span>
           </div>
           <p class="hint">Tippe auf einen Tag, um ihn als Ruhetag oder Skip zu markieren.</p>
         </div>
       </div>
 
-      <div class="grid2">
-        <div class="card">
-          <div class="card-head"><h2>Zeitraum</h2>
-            <div class="seg" id="period-seg" role="group" aria-label="Zeitraum wählen">
-              <button data-p="week" class="active">Woche</button><button data-p="month">Monat</button><button data-p="year">Jahr</button>
-            </div>
-          </div>
-          <div class="totals" id="totals"></div>
-          <div id="type-breakdown"></div>
-        </div>
-        <div class="card">
-          <div class="card-head"><h2>Letzte 12 Wochen</h2><span class="muted">Minuten pro Woche</span></div>
-          <div class="weekchart" id="weekchart"></div>
-        </div>
-      </div>
-
       <div class="card">
-        <div class="card-head"><h2>Persönliche Bestleistungen</h2></div>
-        <div class="prs" id="prs"></div>
-      </div>
-    </section>
-
-    <!-- FEED -->
-    <section id="view-feed" class="view" aria-labelledby="h-feed">
-      <div class="page-head">
-        <h1 class="large-title" id="h-feed">Aktivitäten</h1>
-        <button class="icon-btn round" data-goto="add" aria-label="Aktivität eintragen"><svg class="i" aria-hidden="true"><use href="#i-plus"/></svg></button>
-      </div>
-      <select id="feed-filter" hidden><option value="">Alle Sportarten</option></select>
-      <div class="chips bleed" data-for="feed-filter" role="group" aria-label="Sportart filtern"></div>
-      <div id="feed" class="feed"></div>
-    </section>
-
-    <!-- AUFZEICHNEN (GPS) -->
-    <section id="view-record" class="view" aria-labelledby="h-record">
-      <h1 class="large-title" id="h-record">Aufzeichnen</h1>
-      <div class="card record">
-        <label class="sr-only" for="rec-type">Sportart</label>
-        <select id="rec-type" class="select-sm"></select>
-        <div class="rec-time num" id="rec-time">00:00:00</div>
-        <div class="rec-stats">
-          <div><div class="value num" id="rec-dist">0.00</div><div class="label">km</div></div>
-          <div><div class="value num" id="rec-pace">–</div><div class="label" id="rec-pace-label">Ø Pace /km</div></div>
-          <div><div class="value num" id="rec-split">–</div><div class="label">Aktueller km</div></div>
-        </div>
-        <div class="rec-buttons">
-          <button class="btn primary xl" id="rec-start"><svg class="i" aria-hidden="true"><use href="#i-play"/></svg><span>Aufzeichnung starten</span></button>
-          <button class="btn xl hidden" id="rec-pause"><svg class="i" aria-hidden="true"><use href="#i-pause"/></svg>Pausieren</button>
-          <button class="btn danger xl hidden" id="rec-stop"><svg class="i" aria-hidden="true"><use href="#i-stop"/></svg>Beenden und speichern</button>
-        </div>
-        <p class="muted" id="rec-gps" role="status">GPS: bereit</p>
-        <svg class="route" id="rec-route" viewBox="0 0 300 200" preserveAspectRatio="xMidYMid meet" aria-label="Streckenverlauf"></svg>
-        <table class="splits" id="rec-splits"></table>
-      </div>
-    </section>
-
-    <!-- KRAFT -->
-    <section id="view-strength" class="view" aria-labelledby="h-strength">
-      <!-- Planen -->
-      <h1 class="large-title" id="h-strength">Kraft</h1>
-      <div id="st-setup">
-        <div class="card">
-          <div class="card-head"><h2>Dein Training</h2><span class="muted num" id="st-plan-sum"></span></div>
-          <div id="st-plan"></div>
-          <button class="btn primary xl st-go" id="st-start"><svg class="i" aria-hidden="true"><use href="#i-play"/></svg>Training starten</button>
-        </div>
-
-        <form class="card form st-add" id="st-add">
-          <h2>Übung hinzufügen</h2>
-          <label>Übung
-            <select name="exercise" id="st-exercise"></select>
-          </label>
-          <div class="ex-preview">
-            <svg class="model" id="st-preview" viewBox="0 -24 300 250" aria-hidden="true"></svg>
-            <div class="muscle-tags" id="st-preview-muscles"></div>
+        <div class="card-head"><h2>Zeitraum</h2>
+          <div class="seg" id="period-seg" role="group" aria-label="Zeitraum wählen">
+            <button data-p="week" class="active">Woche</button><button data-p="month">Monat</button><button data-p="year">Jahr</button>
           </div>
-          <label class="hidden" id="st-custom-wrap">Name der Übung <input name="custom" placeholder="z.B. Beinpresse" /></label>
-          <div class="steppers">
-            <label>Sätze <div class="stepper"><button type="button" data-step="sets:-1" aria-label="Weniger Sätze">−</button><input name="sets" type="number" inputmode="numeric" min="1" max="20" value="3" /><button type="button" data-step="sets:1" aria-label="Mehr Sätze">+</button></div></label>
-            <label>Wiederholungen <div class="stepper"><button type="button" data-step="reps:-1" aria-label="Weniger Wiederholungen">−</button><input name="reps" type="number" inputmode="numeric" min="1" max="100" value="8" /><button type="button" data-step="reps:1" aria-label="Mehr Wiederholungen">+</button></div></label>
-            <label>Gewicht (kg) <div class="stepper"><button type="button" data-step="weight:-2.5" aria-label="2,5 kg weniger">−</button><input name="weight" type="number" inputmode="decimal" min="0" step="0.5" value="0" /><button type="button" data-step="weight:2.5" aria-label="2,5 kg mehr">+</button></div></label>
-          </div>
-          <div class="row">
-            <label>Tempo
-              <select name="tempo" id="st-tempo">
-                <option value="2-0-1-0">Normal · 2 s runter, 1 s hoch</option>
-                <option value="3-1-1-0" selected>Kontrolliert · 3 s runter, 1 s halten, 1 s hoch</option>
-                <option value="4-1-2-1">Langsam · 4 s runter, 1 s halten, 2 s hoch, 1 s halten</option>
-                <option value="2-0-0.7-0">Explosiv · 2 s runter, schnell hoch</option>
-                <option value="custom">Eigenes Tempo …</option>
-              </select>
-            </label>
-            <label>Satzpause
-              <select name="rest">
-                <option value="45">45 s</option><option value="60">1:00 min</option><option value="90" selected>1:30 min</option>
-                <option value="120">2:00 min</option><option value="180">3:00 min</option><option value="240">4:00 min</option>
-              </select>
-            </label>
-          </div>
-          <label class="hidden" id="st-tempo-custom-wrap">Eigenes Tempo in Sekunden (runter-halten-hoch-halten)
-            <input name="tempoCustom" placeholder="3-1-1-0" pattern="^\d+(\.\d+)?(-\d+(\.\d+)?){3}$" />
-          </label>
-          <div class="form-actions"><button class="btn" type="submit"><svg class="i" aria-hidden="true"><use href="#i-plus"/></svg>Übung hinzufügen</button></div>
-        </form>
-
-        <div class="card settings">
-          <h2>Signale während des Trainings</h2>
-          <label class="switch"><svg class="i" aria-hidden="true"><use href="#i-bell"/></svg><span>Signalton bei jeder Bewegung</span><input type="checkbox" id="st-sound" checked /></label>
-          <label class="switch"><svg class="i" aria-hidden="true"><use href="#i-voice"/></svg><span>Wiederholungen laut mitzählen</span><input type="checkbox" id="st-voice" checked /></label>
-          <label class="switch"><svg class="i" aria-hidden="true"><use href="#i-vibrate"/></svg><span>Vibration</span><input type="checkbox" id="st-vibrate" checked /></label>
         </div>
+        <div class="totals" id="totals"></div>
       </div>
 
-      <!-- Training läuft -->
-      <div id="st-player" class="hidden">
-        <div class="card player">
-          <div class="pl-head">
-            <div><div class="pl-ex" id="pl-ex"></div><div class="muted" id="pl-sub"></div></div>
-            <div class="pl-clock num" id="pl-clock">0:00</div>
-          </div>
+      <div class="page-head sub"><h2>Verlauf</h2></div>
+      <select id="hist-filter" hidden><option value="">Alles</option><option value="strength">Kraft</option><option value="cardio">Cardio</option></select>
+      <div class="chips" data-for="hist-filter" role="group" aria-label="Verlauf filtern"></div>
+      <div class="feed" id="history"></div>
 
-          <div class="pl-stage" id="pl-stage">
-            <div class="pl-phase" id="pl-phase" aria-live="polite">Bereit</div>
-            <svg class="pl-anim model" id="pl-anim" viewBox="0 -24 300 250" aria-hidden="true"></svg>
-            <div class="muscle-tags" id="pl-muscles"></div>
-            <div class="pl-phasebar"><i id="pl-phasefill"></i></div>
-            <div class="pl-count num"><span id="pl-rep">0</span><small> / <span id="pl-reps">8</span></small></div>
-            <div class="muted">Wiederholungen</div>
-            <div class="pl-dots" id="pl-sets"></div>
-          </div>
+      <div class="card" id="account"></div>
 
-          <!-- Pause zwischen Sätzen -->
-          <div class="pl-rest hidden" id="pl-rest">
-            <div class="pl-phase">Pause</div>
-            <svg class="pl-ring" viewBox="0 0 120 120" aria-hidden="true">
-              <circle class="bg" cx="60" cy="60" r="52" />
-              <circle class="fg" id="pl-ring" cx="60" cy="60" r="52" />
-              <text x="60" y="68" id="pl-rest-time">1:30</text>
-            </svg>
-            <div class="pl-done"><label class="muted" for="pl-done">Geschaffte Wiederholungen im letzten Satz</label>
-              <div class="stepper small"><button type="button" id="pl-done-minus" aria-label="Eine weniger">−</button><input id="pl-done" type="number" inputmode="numeric" min="0" /><button type="button" id="pl-done-plus" aria-label="Eine mehr">+</button></div>
-            </div>
-            <div class="muted" id="pl-next"></div>
-            <div class="rec-buttons">
-              <button class="btn" id="pl-rest-add">Pause +15 s</button>
-              <button class="btn primary" id="pl-rest-skip">Nächster Satz<svg class="i" aria-hidden="true"><use href="#i-arrow-right"/></svg></button>
-            </div>
-          </div>
-
-          <div class="rec-buttons pl-ctrl" id="pl-ctrl">
-            <button class="btn xl" id="pl-pause"><svg class="i" aria-hidden="true"><use href="#i-pause"/></svg><span>Pausieren</span></button>
-            <button class="btn xl" id="pl-setdone"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg>Satz beenden</button>
-          </div>
-          <button class="btn danger" id="pl-stop"><svg class="i" aria-hidden="true"><use href="#i-stop"/></svg>Training beenden</button>
-        </div>
+      <div class="card settings">
+        <h2>Privatsphäre</h2>
+        <label class="switch-row"><span>Wer sieht deine Trainings?<small class="muted">Standard für neue Trainings. Bei „Privat“ erscheint dein Fortschritt nicht unter Entdecken.</small></span>
+          <select id="pf-vis" class="select-sm"><option value="public">Öffentlich</option><option value="followers">Nur Follower</option><option value="private">Privat</option></select></label>
       </div>
 
-      <!-- Zusammenfassung -->
-      <div id="st-summary" class="hidden">
-        <div class="card">
-          <h2>Training abgeschlossen</h2>
-          <div class="totals" id="sum-totals"></div>
-          <div id="sum-table"></div>
-          <form class="form" id="sum-form">
-            <label>Gefühl
-              <select name="feel"><option value="">–</option><option>Hart</option><option>Okay</option><option>Gut</option><option>Super</option></select>
-            </label>
-            <label>Notizen <textarea name="notes" rows="2" placeholder="Wie lief's?"></textarea></label>
-            <div class="form-actions">
-              <button class="btn primary" type="submit"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg>Training speichern</button>
-              <button class="btn danger" type="button" id="sum-discard">Training verwerfen</button>
-            </div>
-          </form>
-        </div>
+      <div class="card settings">
+        <h2>Während des Trainings</h2>
+        <label class="switch"><svg class="i" aria-hidden="true"><use href="#i-timer"/></svg><span>Pausen-Timer nach jedem Satz</span><input type="checkbox" id="set-autoRest" checked /></label>
+        <label class="switch"><svg class="i" aria-hidden="true"><use href="#i-bell"/></svg><span>Signaltöne</span><input type="checkbox" id="set-sound" checked /></label>
+        <label class="switch"><svg class="i" aria-hidden="true"><use href="#i-voice"/></svg><span>Sprachausgabe (Tempo-Coach)</span><input type="checkbox" id="set-voice" checked /></label>
+        <label class="switch"><svg class="i" aria-hidden="true"><use href="#i-vibrate"/></svg><span>Vibration</span><input type="checkbox" id="set-vibrate" checked /></label>
       </div>
-    </section>
-
-    <!-- EINTRAGEN -->
-    <section id="view-add" class="view" aria-labelledby="form-title">
-      <form class="card form" id="add-form">
-        <h1 id="form-title">Aktivität eintragen</h1>
-        <input type="hidden" name="id" />
-        <label>Sportart <select name="type" id="add-type"></select></label>
-        <label>Titel <input name="title" placeholder="z.B. Morgenlauf" /></label>
-        <div class="row">
-          <label>Datum <input type="date" name="date" required /></label>
-          <label>Dauer (h:mm:ss) <input name="duration" placeholder="0:45:00" required inputmode="numeric" pattern="^(\d{1,2}:)?\d{1,2}:\d{2}$" /></label>
-        </div>
-        <div class="row">
-          <label class="dist-field">Distanz (km) <input type="number" step="0.01" min="0" name="distance" placeholder="10" inputmode="decimal" /></label>
-          <label>Gefühl
-            <select name="feel"><option value="">–</option><option>Hart</option><option>Okay</option><option>Gut</option><option>Super</option></select>
-          </label>
-        </div>
-        <label class="dist-field">Splits pro km (optional, mm:ss, mit Komma getrennt)
-          <input name="splits" placeholder="5:12, 5:05, 4:58, 5:01" />
-        </label>
-        <label>Notizen <textarea name="notes" rows="3" placeholder="Wie lief's?"></textarea></label>
-        <div class="form-actions">
-          <button type="submit" class="btn primary"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg>Aktivität speichern</button>
-          <button type="button" class="btn" id="add-cancel">Abbrechen</button>
-        </div>
-      </form>
-
-    </section>
-
-    <!-- PROFIL -->
-    <section id="view-profile" class="view" aria-labelledby="h-profile">
-      <h1 class="large-title" id="h-profile">Profil</h1>
 
       <h2 class="group-title">App-Icon</h2>
       <div class="card group">
@@ -371,22 +316,38 @@
 
       <h2 class="group-title">Daten</h2>
       <div class="card group list">
-        <p class="muted list-note">Alle Daten liegen nur auf diesem Gerät. Ein Export ist dein Backup.</p>
+        <p class="muted list-note">Ohne Konto liegen alle Daten nur auf diesem Gerät. Ein Export ist dein Backup.</p>
         <button class="list-row" id="btn-export"><svg class="i" aria-hidden="true"><use href="#i-download"/></svg><span>Backup exportieren</span><svg class="i chev" aria-hidden="true"><use href="#i-chevron"/></svg></button>
         <label class="list-row"><svg class="i" aria-hidden="true"><use href="#i-upload"/></svg><span>Backup importieren</span><svg class="i chev" aria-hidden="true"><use href="#i-chevron"/></svg><input type="file" id="file-import" accept="application/json" hidden /></label>
         <button class="list-row" data-demo><svg class="i" aria-hidden="true"><use href="#i-bolt"/></svg><span>Beispieldaten laden</span><svg class="i chev" aria-hidden="true"><use href="#i-chevron"/></svg></button>
         <button class="list-row danger" id="btn-reset"><svg class="i" aria-hidden="true"><use href="#i-trash"/></svg><span>Alle Daten löschen</span></button>
       </div>
-      <p class="app-version muted">Pulse · Version 0.6</p>
     </section>
   </main>
+
+  <!-- Pausen-Timer während des Trainings -->
+  <div class="rest-bar hidden" id="rest-bar" role="timer" aria-label="Satzpause">
+    <div class="rest-fill"><i id="rest-fill"></i></div>
+    <div class="rest-inner">
+      <button class="icon-btn" id="rest-minus" aria-label="15 Sekunden weniger">−15</button>
+      <div class="rest-mid"><span class="label">Pause</span><b class="num" id="rest-time">1:30</b></div>
+      <button class="icon-btn" id="rest-plus" aria-label="15 Sekunden mehr">+15</button>
+      <button class="btn sm primary" id="rest-skip">Weiter</button>
+    </div>
+  </div>
 
   <!-- Detail-Ansicht (Bottom-Sheet) -->
   <div class="modal hidden" id="modal"><div class="modal-box" id="modal-box" role="dialog" aria-modal="true"></div></div>
   <div class="toast hidden" id="toast" role="status"></div>
 
+  <script src="vendor/supabase-2.119.0.js"></script>
   <script src="app.js"></script>
   <script src="models.js"></script>
-  <script src="strength.js"></script>
+  <script src="exercises.js"></script>
+  <script src="coach.js"></script>
+  <script src="workout.js"></script>
+  <script src="splits.js"></script>
+  <script src="progress.js"></script>
+  <script src="cloud.js"></script>
 </body>
 </html>
