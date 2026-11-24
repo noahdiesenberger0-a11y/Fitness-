@@ -1,29 +1,44 @@
-# Pulse – Fitness Tracker
+# Pulse – Strava für Krafttraining
 
-Eine leichtgewichtige Fitness-App im Stil von Strava, mit einem **Contribution-Graph wie auf GitHub**,
-in dem du siehst, an welchen Tagen du trainiert hast.
+Eine Trainings-App für Krafttraining: eigene **Splits** bauen, im Gym **Sätze abhaken**, **Rekorde** sammeln
+und sehen, wie du stärker wirst. Mit Streaks und einem Aktivitätskalender wie auf GitHub.
+
+> **Etappe 1 von 3** – die App läuft lokal auf deinem Gerät. Als Nächstes kommen Konten und das Teilen von Splits
+> (Etappe 2), danach Feed, Folgen, Kudos und Kommentare (Etappe 3).
 
 ## Features
 
-- **Contribution-Heatmap**: das letzte Jahr, Tag für Tag. Je mehr Trainingsminuten, desto dunkler das Grün. Filterbar nach Sportart.
-- **Streaks**
-  - 🔥 Aktuelle Streak und 🏆 längste Streak (Tage in Folge mit Training)
-  - 📅 Wochen-Streak (Wochen in Folge mit mindestens einem Training)
-  - 😴 **Ruhetage** halten die Streak, ⏭️ **Skips** (ausgelassene Tage) brechen sie und werden gezählt
-  - Heute bricht die Streak noch nicht, solange der Tag nicht vorbei ist
-- **Splits**: km-Splits mit Pace, Unterschied zum vorherigen km, schnellstem km ⚡ und Erkennung von Negativ-Splits
-- **GPS-Aufzeichnung**: Live-Tracking im Browser mit Zeit, Distanz, Pace, automatischen km-Splits (mit Vibration) und Routenskizze
-- **Kraft-Modus** 🏋️: Training aus Übungen zusammenstellen (z. B. Bankdrücken 3 × 8 mit 60 kg)
-  - Eine **animierte Figur** macht jede Übung im eingestellten **Tempo** vor (z. B. 3 s runter, 1 s halten, 1 s hoch), mit Gerät (Hantel, Bank, Stange, Kabelzug …) und farbig markierten Muskeln
-  - Die Figuren sind selbst gebaut: ein Skelett aus Gelenkwinkeln, berechnet im Code (`models.js`), keine Bilddateien
-  - Zählt Wiederholungen und Sätze mit, auf Wunsch mit Signaltönen, Sprachausgabe und Vibration
-  - Automatische **Satzpause** mit Countdown, tatsächlich geschaffte Wiederholungen lassen sich anpassen
-  - Speichert Sätze, Gewicht und Volumen, Bestleistungen pro Übung
-- **Manuelles Eintragen** mit Dauer, Distanz, Splits, Gefühl und Notizen; Bearbeiten und Löschen
-- **Statistiken**: Woche, Monat und Jahr, Aufteilung nach Sportart, Diagramm der letzten 12 Wochen
-- **Persönliche Bestleistungen**: längster Lauf, schnellster km, beste Pace ab 5 km, 10 km und Halbmarathon, längste Radtour und mehr
-- **Sportarten**: Laufen, Radfahren (km/h), Schwimmen (/100 m), Wandern, Gehen, Krafttraining, Yoga, Sonstiges
-- Export und Import als JSON, Demo-Daten zum Ausprobieren, Hell- und Dunkelmodus, für Handys optimiert
+- **Splits (Trainingspläne)**
+  - Eigene Splits im Baukasten: Tage (z. B. Push, Pull, Legs), Übungen mit Sätzen, Wiederholungsbereich (8–12), Pause und Tempo
+  - Fertige Vorlagen zum Übernehmen und Anpassen: Push/Pull/Legs, Oberkörper/Unterkörper, Ganzkörper 3×, Anfänger-Start, Bro-Split
+  - Ein Split ist aktiv; die App schlägt automatisch den nächsten Tag vor
+- **Training**
+  - Sätze abhaken (Gewicht × Wiederholungen); die Werte vom letzten Mal stehen schon drin
+  - **Progressions-Tipp**: Wenn du letztes Mal alle Sätze am oberen Ende geschafft hast, schlägt die App mehr Gewicht vor
+  - **Rekord-Erkennung** 🏆 während des Trainings (geschätztes 1RM, bei Körpergewicht: Wiederholungen)
+  - **Pausen-Timer** nach jedem Satz mit Ton und Vibration, ±15 s
+  - Übungen hinzufügen, tauschen, verschieben; eigene Übungen anlegen
+  - Das laufende Training übersteht Schließen und Neuladen der App
+  - Freies Training ohne Split, „Nochmal machen“ für ein altes Training
+- **Animierte Figuren** (selbst gebaut, `models.js`)
+  - **Vorführen**: Die Figur zeigt die Übung im eingestellten Tempo, mit markierten Muskeln
+  - **Tempo-Coach**: führt durch einen Satz (z. B. 3 s runter, 1 s hoch), zählt laut mit und trägt die Wiederholungen ein
+- **Fortschritt**
+  - Kurve pro Übung: geschätztes 1RM, schwerster Satz oder Volumen, mit Fortschritt in **Prozent** seit Beginn
+  - Sätze pro Muskelgruppe in dieser Woche (Richtwert 10–20) im Vergleich zu den Wochen davor
+  - Volumen pro Woche, Rekord-Liste aller Übungen
+- **Profil**
+  - Streaks (Ruhetage halten sie, Skips brechen sie), Contribution-Heatmap, Statistik nach Woche, Monat, Jahr
+  - Verlauf als Feed-Karten mit Volumen, Sätzen, Rekorden und Muskel-Mix
+  - Sichtbarkeit (öffentlich, nur Follower, privat) – wird mit dem Teilen in Etappe 2 wirksam
+- **Cardio als Nebensache**: einfache Einträge mit Art, Dauer und optional Distanz
+- Export und Import als JSON, Beispieldaten (16 Wochen PPL mit echter Progression), Hell- und Dunkelmodus
+
+### Umstieg von der alten Version
+
+Daten der früheren Lauf-Version werden beim ersten Start automatisch übernommen: Krafttrainings bleiben Trainings,
+Läufe und andere Sportarten werden Cardio-Einträge, der alte Kraft-Plan wird zum Split „Mein Plan“.
+Die alten Daten bleiben zusätzlich unverändert im Browser gespeichert.
 
 ## Design
 
@@ -44,7 +59,7 @@ auf dem Home-Bildschirm, startet im Vollbild ohne Browserleiste und funktioniert
 
 ### 1. Online stellen
 
-Am Handy braucht die App **HTTPS**, sonst erlauben Handys weder GPS noch die Installation.
+Am Handy braucht die App **HTTPS**, sonst lässt sie sich nicht installieren.
 Am einfachsten geht das mit GitHub Pages:
 
 1. Im Repository auf GitHub: **Settings → Pages**
@@ -62,10 +77,10 @@ Am einfachsten geht das mit GitHub Pages:
 
 - Offline nutzbar (Service Worker `sw.js`)
 - Navigationsleiste unten, Detailansichten als Bottom-Sheet, Safe-Area für Notch und Home-Indicator
-- **Bildschirm bleibt während der GPS-Aufzeichnung an** (Wake Lock). Browser stoppen GPS, sobald das Handy gesperrt wird.
-- **Laufende Aufzeichnung übersteht Schließen und Neuladen** und wird beim nächsten Öffnen fortgesetzt
-- Vibration bei jedem km-Split
-- App-Shortcuts (lange auf das Icon drücken): „Aufzeichnen“ und „Eintragen“
+- **Bildschirm bleibt während des Trainings an** (Wake Lock)
+- **Laufendes Training übersteht Schließen und Neuladen**
+- Vibration bei Rekorden und am Ende der Satzpause
+- App-Shortcuts (lange auf das Icon drücken): „Training“ und „Fortschritt“
 
 ### Lokal testen
 
@@ -82,8 +97,12 @@ Alle Daten bleiben lokal im Browser bzw. in der App (`localStorage`). Mit **Expo
 |----------------|-----------------------------------------------|
 | `index.html`   | Aufbau der Ansichten                          |
 | `styles.css`   | Design (dunkel/hell, mobil)                   |
-| `app.js`       | Logik: Streaks, Heatmap, Splits, GPS, Statistik |
-| `strength.js`  | Kraft-Modus: Sätze, Wiederholungen, Tempo-Animation |
+| `app.js`       | Kern: Datenmodell, Übernahme alter Daten, Streaks, Heatmap, Profil, Cardio |
+| `exercises.js` | Übungsbibliothek, Vorlagen-Splits, 1RM und Volumen |
+| `workout.js`   | Training: Sätze abhaken, Pausen-Timer, Rekorde, Übungsauswahl |
+| `splits.js`    | Splits verwalten und Split-Baukasten          |
+| `progress.js`  | Fortschritt: Kurven, Rekorde, Muskelgruppen, Wochenvolumen |
+| `coach.js`     | Vorführen und Tempo-Coach mit animierter Figur |
 | `models.js`    | Animierte Übungs-Figuren (Posen, Muskeln, Geräte) |
 | `manifest.json`| Web-App-Manifest (Name, Icons, Vollbild, Shortcuts) |
 | `sw.js`        | Service Worker für den Offline-Betrieb        |
