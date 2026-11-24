@@ -12,16 +12,19 @@
 
 :root {
   /* Farben – hell */
-  --bg: #f6f5f2;
+  /* Farbwelt „Sunrise“ (Standard): Galaxy Black, Stahlgrau, Sunrise-Orange */
+  --bg: #f3f4f6;
   --panel: #ffffff;
-  --panel2: #efede8;
-  --line: #e4e1da;
-  --ink: #1d1b18;
-  --muted: #67625a;
-  --accent: #4a7a00;
+  --panel2: #e9ebef;
+  --line: #dfe2e7;
+  --ink: #16171d;
+  --muted: #5d6170;
+  --accent: #b8470f;
   --on-accent: #ffffff;
   --danger: #b42318;
-  --heat0: #ebe8e2;
+  --heat0: #e6e8ec;
+  /* Kalender-Stufen, jede Kachel mit Verlauf wie im Logo */
+  --h1: #ffd2b0; --h2: #ffa765; --h3: #f2702c; --h4: #c94a12; --h4b: #ff8a3d;
   --body: #c3bdb3; --body-far: #dcd8d0; --shine: #ffffff; --equip: #6b665e; --equip2: #9a948a; --plate: #2a2723;
 
   /* Schrift */
@@ -44,30 +47,35 @@
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #100f0e;
-    --panel: #1a1917;
-    --panel2: #252320;
-    --line: #2e2c28;
-    --ink: #f2efe9;
-    --muted: #a29c92;
-    --accent: #c4ef3a;
-    --on-accent: #141310;
+    --bg: #0b0c14;
+    --panel: #15161f;
+    --panel2: #20222b;
+    --line: #2a2c36;
+    --ink: #f1f2f6;
+    --muted: #9a9eab;
+    --accent: #ff8a3d;
+    --on-accent: #1a0b02;
     --danger: #ff7b6e;
-    --heat0: #25231f;
+    --heat0: #262830;
+    --h1: #5a2a14; --h2: #a8461a; --h3: #ff7a2f; --h4: #ff9a3c; --h4b: #ffd98a;
     --body: #cfc9bf; --body-far: #6f6a62; --shine: #ffffff; --equip: #8d877d; --equip2: #4a4640; --plate: #3a3630;
   }
 }
 
-/* ---------- App-Farben (Profil → App-Farbe), passend zu den Icons ---------- */
-:root[data-color="volt"]    { --accent: #4a7a00; --on-accent: #ffffff; }
-:root[data-color="koralle"] { --accent: #d1293f; --on-accent: #ffffff; }
-:root[data-color="ozean"]   { --accent: #2450d4; --on-accent: #ffffff; }
-:root[data-color="violett"] { --accent: #6a3ad6; --on-accent: #ffffff; }
+/* ---------- Farbwelt „Ägypten“: Ägyptischblau, Steinblau, Scharlachrot, Weiß ---------- */
+:root[data-color="aegypten"], :root[data-color="weiss"] {
+  --bg: #f3f5f9; --panel: #ffffff; --panel2: #e8ecf3; --line: #dce2ec;
+  --ink: #0d1430; --muted: #5a6480; --heat0: #e4e9f0;
+  --accent: #1034a6; --on-accent: #ffffff;
+  --h1: #c3cfdd; --h2: #7d93ad; --h3: #1034a6; --h4: #e0201a; --h4b: #ff5a3c;
+}
 @media (prefers-color-scheme: dark) {
-  :root[data-color="volt"]    { --accent: #c4ef3a; --on-accent: #141310; }
-  :root[data-color="koralle"] { --accent: #ff6e7c; --on-accent: #1a0a0c; }
-  :root[data-color="ozean"]   { --accent: #7a9cff; --on-accent: #0a0f1f; }
-  :root[data-color="violett"] { --accent: #a98cff; --on-accent: #120a24; }
+  :root[data-color="aegypten"], :root[data-color="weiss"] {
+    --bg: #070b1f; --panel: #0f1530; --panel2: #1a2244; --line: #232c52;
+    --ink: #eef2fa; --muted: #9aa6c2; --heat0: #1a2244;
+    --accent: #8aa4ff; --on-accent: #070b1f;
+    --h1: #34456e; --h2: #7d93ad; --h3: #e9eef5; --h4: #ff2a1a; --h4b: #ff6a4c;
+  }
 }
 
 /* ---------- Grundlagen ---------- */
@@ -253,10 +261,10 @@ input[type=date] { padding-right: var(--s-2); }
 .cell { display: inline-block; width: 13px; height: 13px; border-radius: 3px; background: var(--heat0); }
 .heatmap .cell { cursor: pointer; transition: transform var(--t-hover) var(--ease); }
 @media (hover: hover) and (pointer: fine) { .heatmap .cell:not(.future):hover { transform: scale(1.25); } }
-.cell.l1 { background: color-mix(in srgb, var(--accent) 28%, var(--heat0)); }
-.cell.l2 { background: color-mix(in srgb, var(--accent) 52%, var(--heat0)); }
-.cell.l3 { background: color-mix(in srgb, var(--accent) 76%, var(--heat0)); }
-.cell.l4 { background: var(--accent); }
+.cell.l1 { background: linear-gradient(135deg, var(--h1), color-mix(in srgb, var(--h1) 55%, var(--h2))); }
+.cell.l2 { background: linear-gradient(135deg, var(--h2), color-mix(in srgb, var(--h2) 55%, var(--h3))); }
+.cell.l3 { background: linear-gradient(135deg, var(--h3), color-mix(in srgb, var(--h3) 55%, var(--h4))); }
+.cell.l4 { background: linear-gradient(135deg, var(--h4), var(--h4b)); }
 .cell.rest { background: transparent; box-shadow: inset 0 0 0 1.5px var(--muted); }
 .cell.skip { background: repeating-linear-gradient(135deg, var(--muted) 0 1.5px, transparent 1.5px 4px); box-shadow: inset 0 0 0 1px var(--muted); }
 .cell.future { visibility: hidden; }
@@ -477,13 +485,16 @@ button, label.btn, .tabs, .chips, .list-row, .activity, .heatmap, .pr, .day-item
 .app-version { text-align: center; margin: var(--s-6) 0 var(--s-2); }
 
 /* App-Farbe */
-.color-pick { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--s-2); padding: var(--s-4) var(--s-3) var(--s-3); }
+.color-pick { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--s-2); padding: var(--s-4) var(--s-3) var(--s-3); }
 .color-opt { display: flex; flex-direction: column; align-items: center; gap: var(--s-2); padding: 0; border: 0; background: none; color: var(--muted); font: 500 var(--t-label) var(--font); cursor: pointer; }
 .color-opt img { width: 60px; height: 60px; border-radius: 14px; outline: 2.5px solid transparent; outline-offset: 3px; transition: outline-color var(--t-hover) var(--ease), transform var(--t-press) var(--ease); }
 .color-opt:active img { transform: scale(.93); }
 .color-opt[aria-checked="true"] { color: var(--ink); font-weight: 600; }
 .color-opt[aria-checked="true"] img { outline-color: var(--accent); }
 .color-hint { padding: 0 var(--s-4) var(--s-4); }
+.color-world { grid-column: 1 / -1; display: flex; align-items: baseline; gap: var(--s-2); font-weight: 600; color: var(--ink); margin-top: var(--s-2); }
+.color-world:first-child { margin-top: 0; }
+.color-world small { color: var(--muted); font-weight: 400; font-size: var(--t-label); }
 
 /* ---------- Tablet ---------- */
 @media (max-width: 820px) {

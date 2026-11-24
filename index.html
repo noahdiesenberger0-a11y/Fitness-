@@ -3,14 +3,14 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content" />
-  <meta name="theme-color" content="#f6f5f2" media="(prefers-color-scheme: light)" />
-  <meta name="theme-color" content="#100f0e" media="(prefers-color-scheme: dark)" />
+  <meta name="theme-color" content="#f3f4f6" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#0b0c14" media="(prefers-color-scheme: dark)" />
   <script>
     /* App-Farbe vor dem ersten Zeichnen setzen (Akzent, Icon, Manifest) */
     (function () {
-      var c = 'volt';
+      var c = 'galaxy';
       try { c = localStorage.getItem('pulse.color') || c; } catch (e) {}
-      if (!/^(volt|koralle|ozean|violett)$/.test(c)) c = 'volt';
+      if (!/^(galaxy|stahl|aegypten|weiss)$/.test(c)) c = 'galaxy';
       document.documentElement.dataset.color = c;
       window.PULSE_COLOR = c;
     })();
