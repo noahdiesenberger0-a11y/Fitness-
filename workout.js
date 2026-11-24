@@ -155,18 +155,43 @@ function startEmpty() {
   beginWorkout({ title: 'Freies Training', exercises: [] });
   openPicker(addExerciseToActive);
 }
+/** Ziel je Übung aus einem fertigen Training (Satzzahl und Wdh. wie dort) */
+function targetsFrom(w) {
+  return w.exercises.filter((e) => doneSets(e).length).map((e) => {
+    const s = doneSets(e);
+    const reps = Math.max(...s.map((x) => x.reps || 0)) || 10;
+    return { exId: e.exId, name: e.name, sets: s.length, repsMin: reps, repsMax: reps, rest: 90, tempo: '2-0-1-0' };
+  });
+}
 function repeatWorkout(id) {
   if (active) return toast('Es läuft schon ein Training');
   const w = state.workouts.find((x) => x.id === id);
   if (!w) return;
   beginWorkout({
     title: w.title, splitId: w.splitId, dayId: w.dayId, splitName: w.splitName,
-    exercises: w.exercises.map((e) => {
-      const s = doneSets(e);
-      const reps = Math.max(...s.map((x) => x.reps));
-      return prefill(e.exId, e.name, { sets: s.length, repsMin: reps, repsMax: reps, rest: 90, tempo: '2-0-1-0' });
-    }),
+    exercises: targetsFrom(w).map((t) => prefill(t.exId, t.name, t)),
   });
+}
+/** Training einer anderen Person nachmachen (mit deinen eigenen Gewichten vom letzten Mal) */
+function copyWorkout(w, who) {
+  if (active) return toast('Es läuft schon ein Training');
+  closeModal();
+  beginWorkout({ title: w.title, exercises: targetsFrom(w).map((t) => prefill(t.exId, t.name, t)) });
+  toast(`Training von ${who} gestartet`);
+}
+/** Training einer anderen Person als neuen Tag in den aktiven Split übernehmen */
+function copyWorkoutToSplit(w, who) {
+  let split = activeSplit();
+  if (!split) {
+    split = { id: uid(), name: 'Mein Split', goal: 'Muskelaufbau', level: '', perWeek: 3, description: '', days: [], createdAt: new Date().toISOString() };
+    state.splits.push(split);
+    state.activeSplitId = split.id;
+  }
+  const day = { id: uid(), name: w.title || 'Tag ' + String.fromCharCode(65 + split.days.length), exercises: targetsFrom(w) };
+  split.days.push(day);
+  save();
+  closeModal();
+  toast(`„${day.name}“ von ${who} zu ${split.name} hinzugefügt`);
 }
 function addExerciseToActive(exId) {
   const info = exInfo(exId);
@@ -241,6 +266,7 @@ function renderLive() {
       </div>
       <div class="lx-actions">
         <button class="btn sm" data-add-set="${i}">${ic('plus')}Satz</button>
+        <button class="btn sm" data-tips="${esc(e.exId)}">${ic('info')}Tipps</button>
         ${info.model ? `<button class="btn sm" data-demo-ex="${i}">${ic('play')}Vorführen</button>` : ''}
         <button class="btn sm" data-coach="${i}">${ic('timer')}Tempo-Coach</button>
       </div>
@@ -461,8 +487,9 @@ function openPicker(cb) {
 function renderPickerList() {
   const q = ($('#pk-search')?.value || '').trim().toLowerCase();
   const list = allExercises().filter((e) => (!pickerGroup || e.group === pickerGroup) && (!q || e.name.toLowerCase().includes(q)));
-  $('#pk-list').innerHTML = list.map((e) => `<button class="pk-item" data-pick="${e.id}">
-      ${exThumb(e.id, 'mini-thumb')}<span><b>${esc(e.name)}</b><small class="muted">${GROUPS[e.group]}${e.model ? '' : ' · ohne Animation'}</small></span></button>`).join('')
+  $('#pk-list').innerHTML = list.map((e) => `<div class="pk-row"><button class="pk-item" data-pick="${e.id}">
+      ${exThumb(e.id, 'mini-thumb')}<span><b>${esc(e.name)}</b><small class="muted">${GROUPS[e.group]}${e.model ? '' : ' · ohne Animation'}</small></span></button>
+      ${TIPS[e.id] ? `<button class="icon-btn ghost" data-tips="${e.id}" aria-label="Tipps zu ${esc(e.name)}">${ic('info')}</button>` : ''}</div>`).join('')
     || '<p class="muted">Nichts gefunden. Leg die Übung unten selbst an.</p>';
 }
 function pick(exId) {

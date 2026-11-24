@@ -154,6 +154,7 @@ async function sync() {
       state.sync.profileHash = hashOf(prof);
     }
     await pushResults();
+    await pushStats();
     if (pulled) markAllPRs();
     state.sync.last = new Date().toISOString();
     lastSyncError = '';
@@ -231,6 +232,36 @@ async function pushResults() {
     if (error) throw error;
     delete H[key];
   }
+}
+
+/* ---------------- Profil-Statistik für Follower ---------------- */
+/** Skips, Ruhetage (12 Monate), Streak und Rekorde – sichtbar je nach Profil-Sichtbarkeit */
+function profileStats() {
+  // Nur mit echten Trainings teilen – Beispieldaten bleiben auf dem Gerät
+  const real = state.workouts.some((w) => !w.demo) || state.cardio.some((c) => !c.demo);
+  if (!real) return { marks: {}, records: [], streak: {} };
+  const from = ymd(addDays(today(), -365));
+  const marks = {};
+  for (const [k, v] of Object.entries(state.marks || {})) if (k >= from && (v === 'skip' || v === 'rest')) marks[k] = v;
+  const s = computeStreaks();
+  return {
+    marks,
+    records: recordSummary(8),
+    streak: { current: s.current, longest: s.longest, weeks: s.weekStreak, skips: s.skips },
+  };
+}
+let statsMissing = false; // Tabelle noch nicht angelegt (stats.sql nicht ausgeführt)
+async function pushStats() {
+  if (statsMissing) return;
+  const st = profileStats();
+  const h = hashOf(st);
+  if (state.sync.statsHash === h) return;
+  const { error } = await sb.from('profile_stats').upsert({ user_id: user.id, ...st, updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
+  if (error) {
+    if (error.code === '42P01' || error.code === 'PGRST205') { statsMissing = true; return; }
+    throw error;
+  }
+  state.sync.statsHash = h;
 }
 
 /* ---------------- Anmelden / Registrieren ---------------- */

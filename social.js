@@ -416,13 +416,15 @@ async function showUser(id) {
   openModal(`<div class="profile-head">${avatar(p, 'lg')}<div class="pf-body"><h3>${esc(displayName(p))}</h3>
     ${p.username ? `<div class="muted">@${esc(p.username)}</div>` : ''}</div></div><p class="muted">Lade …</p>`, 'tall');
   try {
-    const [prof, followers, following, ws, sp] = await Promise.all([
+    const [prof, followers, following, ws, sp, stq] = await Promise.all([
       sb.from('profiles').select('id, username, display_name, visibility').eq('id', id).maybeSingle(),
       sb.from('follows').select('follower', { count: 'exact', head: true }).eq('following', id),
       sb.from('follows').select('following', { count: 'exact', head: true }).eq('follower', id),
       sb.from('workouts').select('user_id, id, date, data, updated_at').eq('user_id', id).order('date', { ascending: false }).limit(60),
       sb.from('splits').select('user_id, ref, data, published_at').eq('user_id', id).eq('is_public', true),
+      sb.from('profile_stats').select('marks, records, streak').eq('user_id', id).maybeSingle(),
     ]);
+    const st = stq.error ? null : stq.data; // fehlt, wenn privat oder stats.sql noch nicht ausgeführt
     if (prof.error) throw prof.error;
     const pr = prof.data || p;
     social.profiles[id] = { id, username: pr.username, display_name: pr.display_name };
@@ -433,7 +435,9 @@ async function showUser(id) {
     const f = social.following.has(id);
     const fourWeeks = ymd(addDays(today(), -28));
     const recent = list.filter((r) => r.date >= fourWeeks).length;
-    const prs = list.reduce((n, r) => n + (r.data.prs || 0), 0);
+    const marks = st?.marks || {};
+    const twelve = ymd(addDays(mondayOf(today()), -11 * 7));
+    const skips12 = Object.entries(marks).filter(([k, v]) => v === 'skip' && k >= twelve).length;
     if (!$('#modal-box .profile-head')) return; // Sheet inzwischen geschlossen
     openModal(`
       <div class="profile-head">${avatar(pr, 'lg')}<div class="pf-body"><h3>${esc(displayName(pr))}</h3>
@@ -442,11 +446,14 @@ async function showUser(id) {
         <div><b class="num">${followers.count ?? 0}</b><span>Follower</span></div>
         <div><b class="num">${following.count ?? 0}</b><span>Folgt</span></div>
         <div><b class="num">${recent}</b><span>Trainings · 4 Wo.</span></div>
-        <div><b class="num">${prs}</b><span>Rekorde</span></div>
+        <div class="${skips12 ? 'is-skip' : ''}"><b class="num">${st ? skips12 : '–'}</b><span>Skips · 12 Wo.</span></div>
       </div>
+      ${st?.streak?.current ? `<p class="streak-line"><b class="num">${st.streak.current}</b> ${st.streak.current === 1 ? 'Tag' : 'Tage'} Streak · Rekord ${st.streak.longest}</p>` : ''}
       ${user && user.id !== id ? `<button class="btn wide ${f ? '' : 'primary'}" data-follow="${id}">${f ? 'Gefolgt' : 'Folgen'}</button>`
         : !user ? `<button class="btn wide primary" data-follow="${id}">Folgen</button>` : ''}
-      ${list.length ? `<h4 class="sd-h">Aktivität</h4>${miniHeat(list.map((r) => r.date))}` : ''}
+      ${list.length || st ? `<h4 class="sd-h">Aktivität</h4>${miniHeat(list.map((r) => r.date), marks)}
+        <div class="mini-legend"><span><i class="cell l3"></i>Training</span><span><i class="cell rest"></i>Ruhetag</span><span><i class="cell skip"></i>Skip</span></div>` : ''}
+      ${st?.records?.length ? `<h4 class="sd-h">Rekorde</h4><div class="prs">${recordRows(st.records.slice(0, 5))}</div>` : ''}
       ${(sp.data || []).length ? `<h4 class="sd-h">Splits</h4>${sp.data.map((s) => `
         <button class="card split-card mini" data-dc-split="${esc(s.ref)}"><b>${esc(s.data.name)}</b>
           <span class="muted">${esc(splitMeta(s.data))}</span></button>`).join('')}` : ''}
@@ -462,7 +469,7 @@ async function showUser(id) {
 }
 
 /** Kleiner Aktivitätskalender: letzte 12 Wochen */
-function miniHeat(dates) {
+function miniHeat(dates, marks = {}) {
   const set = {};
   for (const d of dates) set[d] = (set[d] || 0) + 1;
   const start = addDays(mondayOf(today()), -11 * 7);
@@ -471,7 +478,10 @@ function miniHeat(dates) {
     const d = addDays(start, w * 7 + i);
     const k = ymd(d);
     const n = set[k] || 0;
-    cells += `<i class="cell ${d > today() ? 'future' : n ? (n > 1 ? 'l4' : 'l3') : ''}" style="grid-column:${w + 1};grid-row:${i + 1}" title="${fmtDate(k)}"></i>`;
+    const m = !n && marks[k];
+    const cls = d > today() ? 'future' : n ? (n > 1 ? 'l4' : 'l3') : m === 'skip' ? 'skip' : m === 'rest' ? 'rest' : '';
+    const tip = n ? 'Training' : m === 'skip' ? 'Skip' : m === 'rest' ? 'Ruhetag' : 'Kein Training';
+    cells += `<i class="cell ${cls}" style="grid-column:${w + 1};grid-row:${i + 1}" title="${fmtDate(k)}: ${tip}"></i>`;
   }
   return `<div class="mini-heat">${cells}</div>`;
 }
@@ -619,7 +629,7 @@ function renderWorkoutSheet(r, focusComment) {
   const rows = w.exercises.map((e) => {
     const b = bestOf(e);
     return `<div class="wd-ex">
-      <div class="wd-head">${exThumb(e.exId, 'wd-thumb')}<div><b>${esc(e.name)}</b>
+      <div class="wd-head">${exThumb(e.exId, 'wd-thumb')}<div><b>${esc(e.name)}</b>${TIPS[e.exId] ? ` <button class="link-btn tips-link" data-tips="${esc(e.exId)}">Tipps</button>` : ''}
         <div class="muted">${GROUPS[exInfo(e.exId, e.name).group]}${b && !b.bw ? ` · 1RM ≈ ${fmtW(Math.round(b.score))} kg` : ''}</div></div></div>
       <ol class="wd-sets">${doneSets(e).map((s) => `<li class="${s.pr ? 'pr' : ''}"><span class="num">${fmtSet(s)}</span>${s.pr ? `<span class="pr-tag">${ic('trophy')}Rekord</span>` : ''}</li>`).join('')}</ol>
     </div>`;
@@ -638,7 +648,12 @@ function renderWorkoutSheet(r, focusComment) {
     ${w.notes ? `<p class="notes">${esc(w.notes)}</p>` : ''}
     <div class="wd-list">${rows}</div>
     <div class="social-box" data-social="${r.user_id}|${r.id}"></div>
-    <div class="modal-actions"><button class="btn" data-close>Schließen</button></div>`, 'tall');
+    <div class="modal-actions">
+      ${user && r.user_id === user.id ? '' : `<button class="btn primary" data-copy-w="${esc(r.user_id + '|' + r.id)}">${ic('play')}Training machen</button>
+      <button class="btn" data-copy-w-split="${esc(r.user_id + '|' + r.id)}">${ic('copy')}Zu meinem Split</button>`}
+      <button class="btn" data-close>Schließen</button>
+    </div>`, 'tall');
+  social.sheet = r;
   fillSocialBoxes(focusComment);
 }
 
@@ -753,7 +768,7 @@ async function showNotifs() {
 
 /* ---------------- Events ---------------- */
 document.addEventListener('click', (e) => {
-  const el = e.target.closest('[data-follow],[data-user],[data-fw],[data-kudos],[data-kudos-list],[data-people],[data-notifs],[data-share-profile],[data-share-code],[data-share-link],[data-copy-link],[data-username],[data-follow-list],[data-feed-more],[data-del-comment]');
+  const el = e.target.closest('[data-follow],[data-user],[data-fw],[data-kudos],[data-kudos-list],[data-people],[data-notifs],[data-share-profile],[data-share-code],[data-share-link],[data-copy-link],[data-username],[data-follow-list],[data-feed-more],[data-del-comment],[data-copy-w],[data-copy-w-split]');
   if (!el || !sb) return;
   const ds = el.dataset;
   if (ds.follow) { e.stopPropagation(); followUser(ds.follow); }
@@ -767,6 +782,12 @@ document.addEventListener('click', (e) => {
   else if (ds.shareCode !== undefined) shareCode();
   else if (ds.shareLink !== undefined) shareLink();
   else if (ds.copyLink !== undefined) copyLink();
+  else if (ds.copyW || ds.copyWSplit) {
+    const r = social.sheet;
+    if (!r) return;
+    const who = displayName(social.profiles[r.user_id] || { id: r.user_id });
+    if (ds.copyW) copyWorkout(r.data, who); else copyWorkoutToSplit(r.data, who);
+  }
   else if (ds.username !== undefined) usernameForm(!social.me?.username);
   else if (ds.followList) showFollowList(ds.followList);
   else if (ds.feedMore !== undefined) loadFeed(false);

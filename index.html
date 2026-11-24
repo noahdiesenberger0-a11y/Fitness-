@@ -44,6 +44,7 @@
   <svg width="0" height="0" style="position:absolute" aria-hidden="true">
     <defs>
       <symbol id="i-logo" viewBox="0 0 24 24"><defs><linearGradient id="lg-pulse" gradientUnits="userSpaceOnUse" x1="3.73" y1="0" x2="20.27" y2="0"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#e8263d"/></linearGradient></defs><rect x="1" y="1" width="22" height="22" rx="5" class="fill"/><g stroke="none"><rect x="3.73" y="3.73" width="3.52" height="3.52" rx=".9" fill="#fff" fill-opacity=".12"/><rect x="8.07" y="3.73" width="3.52" height="3.52" rx=".9" fill="url(#lg-pulse)"/><rect x="12.41" y="3.73" width="3.52" height="3.52" rx=".9" fill="#fff" fill-opacity=".12"/><rect x="16.75" y="3.73" width="3.52" height="3.52" rx=".9" fill="#fff" fill-opacity=".12"/><rect x="3.73" y="8.07" width="3.52" height="3.52" rx=".9" fill="#fff" fill-opacity=".3"/><rect x="8.07" y="8.07" width="3.52" height="3.52" rx=".9" fill="#fff" fill-opacity=".3"/><rect x="12.41" y="8.07" width="3.52" height="3.52" rx=".9" fill="#fff" fill-opacity=".12"/><rect x="16.75" y="8.07" width="3.52" height="3.52" rx=".9" fill="#fff" fill-opacity=".3"/><rect x="3.73" y="12.41" width="3.52" height="3.52" rx=".9" fill="url(#lg-pulse)"/><rect x="8.07" y="12.41" width="3.52" height="3.52" rx=".9" fill="#fff" fill-opacity=".12"/><rect x="12.41" y="12.41" width="3.52" height="3.52" rx=".9" fill="#fff" fill-opacity=".3"/><rect x="16.75" y="12.41" width="3.52" height="3.52" rx=".9" fill="url(#lg-pulse)"/><rect x="3.73" y="16.75" width="3.52" height="3.52" rx=".9" fill="#fff" fill-opacity=".3"/><rect x="8.07" y="16.75" width="3.52" height="3.52" rx=".9" fill="#fff" fill-opacity=".12"/><rect x="12.41" y="16.75" width="3.52" height="3.52" rx=".9" fill="url(#lg-pulse)"/><rect x="16.75" y="16.75" width="3.52" height="3.52" rx=".9" fill="#fff" fill-opacity=".3"/></g></symbol>
+      <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 11v5.5"/><circle cx="12" cy="7.8" r=".6" class="fill"/></symbol>
       <symbol id="i-home" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></symbol>
       <symbol id="i-list" viewBox="0 0 24 24"><path d="M9 6h11.5M9 12h11.5M9 18h11.5"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/></symbol>
       <symbol id="i-dumbbell" viewBox="0 0 24 24"><rect x="4.5" y="7" width="3.5" height="10" rx="1"/><rect x="16" y="7" width="3.5" height="10" rx="1"/><path d="M8 12h8M2.5 10v4M21.5 10v4"/></symbol>
@@ -298,6 +299,11 @@
         </div>
       </div>
 
+      <div class="card hidden" id="pf-records-card">
+        <div class="card-head"><h2>Rekorde</h2><button class="link-btn" data-view="progress">Alle</button></div>
+        <div class="prs" id="pf-records"></div>
+      </div>
+
       <div class="card">
         <div class="card-head"><h2>Zeitraum</h2>
           <div class="seg" id="period-seg" role="group" aria-label="Zeitraum wählen">
@@ -371,5 +377,6 @@
   <script src="cloud.js"></script>
   <script src="vendor/qrcode-generator-1.4.4.js"></script>
   <script src="social.js"></script>
+  <script src="tips.js"></script>
 </body>
 </html>

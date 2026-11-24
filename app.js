@@ -237,6 +237,9 @@ function renderProfile() {
   $('#st-weeks').textContent = s.weekStreak;
   $('#st-skips').textContent = s.skips;
   renderHeatmap();
+  const recs = recordSummary(5);
+  $('#pf-records-card').classList.toggle('hidden', !recs.length);
+  $('#pf-records').innerHTML = recordRows(recs);
   renderTotals();
   renderHistory();
   renderAccount();
@@ -397,7 +400,7 @@ function showWorkout(id) {
   const rows = w.exercises.map((e) => {
     const b = bestOf(e);
     return `<div class="wd-ex">
-      <div class="wd-head">${exThumb(e.exId, 'wd-thumb')}<div><b>${esc(e.name)}</b>
+      <div class="wd-head">${exThumb(e.exId, 'wd-thumb')}<div><b>${esc(e.name)}</b>${TIPS[e.exId] ? ` <button class="link-btn tips-link" data-tips="${esc(e.exId)}">Tipps</button>` : ''}
         <div class="muted">${GROUPS[exInfo(e.exId, e.name).group]}${b && !b.bw ? ` · 1RM ≈ ${fmtW(Math.round(b.score))} kg` : ''}</div></div></div>
       <ol class="wd-sets">${doneSets(e).map((s) => `<li class="${s.pr ? 'pr' : ''}"><span class="num">${fmtSet(s)}</span>${s.pr ? `<span class="pr-tag">${ic('trophy')}Rekord</span>` : ''}</li>`).join('')}</ol>
     </div>`;

@@ -141,8 +141,8 @@ function bindChartHover() {
 }
 
 /** Rekorde: bestes geschätztes 1RM je Übung, dazu der schwerste Satz */
-function renderRecords() {
-  const rows = trainedExercises().map((x) => {
+function computeRecords() {
+  return trainedExercises().map((x) => {
     const h = exerciseHistory(x.id);
     const bw = h.every((p) => !p.maxW);
     const top = h.reduce((b, p) => ((bw ? p.maxReps : p.e1rm) > (bw ? b.maxReps : b.e1rm) ? p : b), h[0]);
@@ -152,6 +152,22 @@ function renderRecords() {
     }
     return { x, bw, top, heavy, score: bw ? 0 : top.e1rm };
   }).sort((a, b) => b.score - a.score);
+}
+/** Kurzform zum Teilen: { exId, name, kg (≈1RM) | reps, set } */
+function recordSummary(limit = 8) {
+  return computeRecords().slice(0, limit).map((r) => r.bw
+    ? { exId: r.x.id, name: r.x.name, reps: r.top.maxReps }
+    : { exId: r.x.id, name: r.x.name, kg: Math.round(r.top.e1rm), set: fmtSet(r.heavy) });
+}
+/** Rekord-Zeilen (eigene oder geteilte Kurzform) */
+function recordRows(list) {
+  return list.map((r) => `
+    <div class="pr"><div><div class="label">${esc(r.name)}</div>
+      <div class="sub">${r.reps ? 'Meiste Wiederholungen' : `Schwerster Satz ${esc(r.set || '')}`}</div></div>
+      <div class="value">${r.reps ? r.reps + ' Wdh.' : '≈ ' + fmtW(r.kg) + ' kg'}</div></div>`).join('');
+}
+function renderRecords() {
+  const rows = computeRecords();
   $('#pg-records').innerHTML = rows.map((r) => `
     <div class="pr" data-pg-ex="${esc(r.x.id)}">
       <div><div class="label">${esc(r.x.name)}</div>

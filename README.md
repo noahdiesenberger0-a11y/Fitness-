@@ -51,7 +51,12 @@ Die alten Daten bleiben zusätzlich unverändert im Browser gespeichert.
 - **Feed** (eigener Tab): nur deine Trainings und die der Leute, denen du folgst. Kein „Für dich“
 - **Kudos** 💪 und **Kommentare** unter Trainings, auch unter deinen eigenen im Verlauf
 - **Benachrichtigungen** in der App: Glocke mit Zähler und Punkt am Feed-Tab bei neuen Followern, Kudos und Kommentaren
-- **Profile anderer:** Follower, Trainings der letzten 4 Wochen, Rekorde, Aktivitätskalender, geteilte Splits zum Übernehmen
+- **Profile anderer:** Follower, Trainings der letzten 4 Wochen, **Skips der letzten 12 Wochen**, Streak, Aktivitätskalender mit Ruhetagen und roten Skips,
+  **Rekorde**, geteilte Splits zum Übernehmen. Skips sind sichtbar, damit Freunde dich motivieren dranzubleiben (folgt der Profil-Sichtbarkeit;
+  Beispieldaten werden nie geteilt)
+- **Trainings kopieren:** Bei jedem Training von anderen „Training machen“ (startet es sofort, mit deinen Gewichten vom letzten Mal) oder „Zu meinem Split“ (neuer Tag im aktiven Split)
+- **Übungs-Tipps:** Zu jeder Übung „So geht's“ und „Typische Fehler“ – im Training, in der Übungsauswahl (ⓘ) und in der Trainingsansicht
+- **Eigene Rekorde** im Profil (Top 5, alle unter Fortschritt)
 - Sichtbarkeit gilt überall: „Nur Follower“-Trainings sieht nur, wer dir folgt; „Privat“ sieht niemand
 
 **Entdecken** ist jetzt unter **Splits** zu finden.
@@ -66,7 +71,8 @@ pro Split erscheinen unter **Entdecken**. Beispieldaten werden nie hochgeladen.
 
 1. Im Supabase-Dashboard: **SQL Editor → New query**, den Inhalt von [`supabase/schema.sql`](supabase/schema.sql) einfügen und **Run**.
    Das legt die Tabellen und die Zugriffsregeln an (Row Level Security: jeder ändert nur seine eigenen Daten).
-   Danach genauso [`supabase/social.sql`](supabase/social.sql) für Benutzernamen, Kudos, Kommentare und Benachrichtigungen.
+   Danach genauso [`supabase/social.sql`](supabase/social.sql) für Benutzernamen, Kudos, Kommentare und Benachrichtigungen
+   und [`supabase/stats.sql`](supabase/stats.sql), damit Follower Skips, Ruhetage, Streak und Rekorde sehen.
 2. **Authentication → URL Configuration**: als **Site URL** die Adresse der App eintragen
    (z. B. `https://<github-name>.github.io/Fitness-/`) und dieselbe Adresse unter **Redirect URLs** hinzufügen.
    Sonst führen die Links in der Bestätigungs-Mail ins Leere.
