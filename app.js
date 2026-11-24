@@ -6,14 +6,14 @@
  * ============================================================ */
 
 const TYPES = {
-  run:   { name: 'Laufen',        icon: '🏃', distance: true,  pace: 'min' },
-  ride:  { name: 'Radfahren',     icon: '🚴', distance: true,  pace: 'speed' },
-  swim:  { name: 'Schwimmen',     icon: '🏊', distance: true,  pace: 'swim' },
-  hike:  { name: 'Wandern',       icon: '🥾', distance: true,  pace: 'min' },
-  walk:  { name: 'Gehen',         icon: '🚶', distance: true,  pace: 'min' },
-  gym:   { name: 'Krafttraining', icon: '🏋️', distance: false },
-  yoga:  { name: 'Yoga',          icon: '🧘', distance: false },
-  other: { name: 'Sonstiges',     icon: '⚡', distance: false },
+  run:   { name: 'Laufen',        icon: 'run', distance: true,  pace: 'min' },
+  ride:  { name: 'Radfahren',     icon: 'ride', distance: true,  pace: 'speed' },
+  swim:  { name: 'Schwimmen',     icon: 'swim', distance: true,  pace: 'swim' },
+  hike:  { name: 'Wandern',       icon: 'hike', distance: true,  pace: 'min' },
+  walk:  { name: 'Gehen',         icon: 'walk', distance: true,  pace: 'min' },
+  gym:   { name: 'Krafttraining', icon: 'dumbbell', distance: false },
+  yoga:  { name: 'Yoga',          icon: 'yoga', distance: false },
+  other: { name: 'Sonstiges',     icon: 'bolt', distance: false },
 };
 
 const STORE_KEY = 'pulse.v1';
@@ -41,6 +41,10 @@ function save() {
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => [...document.querySelectorAll(s)];
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+/** Icon aus dem SVG-Set in index.html */
+const ic = (name, cls = '') => `<svg class="i ${cls}" aria-hidden="true"><use href="#i-${name}"/></svg>`;
+/** Gefühl ohne alte Emojis anzeigen */
+const feelText = (f) => String(f || '').replace(/^[^\p{L}]+/u, '');
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 
 function ymd(d) {
@@ -157,6 +161,11 @@ function renderDashboard() {
   const s = computeStreaks();
   $('#welcome').classList.toggle('hidden', state.activities.length > 0);
   $('#st-current').textContent = s.current;
+  $('#st-unit').textContent = s.current === 1 ? 'Tag' : 'Tage';
+  const doneToday = state.activities.some((a) => a.date === ymd(today()));
+  $('#st-note').textContent = doneToday
+    ? 'Heute erledigt. Morgen geht es weiter.'
+    : s.current > 0 ? 'Trainiere heute, um deine Streak zu halten. Ruhetage zählen auch.' : 'Trainiere heute, um eine neue Streak zu starten.';
   $('#st-longest').textContent = s.longest;
   $('#st-weeks').textContent = s.weekStreak;
   $('#st-skips').textContent = s.skips;
@@ -247,7 +256,7 @@ function renderTotals() {
   const max = Math.max(1, ...Object.values(byType));
   $('#type-breakdown').innerHTML = Object.entries(byType)
     .sort((a, b) => b[1] - a[1])
-    .map(([t, sec]) => `<div class="bar-row"><span>${TYPES[t]?.icon || ''} ${TYPES[t]?.name || t}</span>
+    .map(([t, sec]) => `<div class="bar-row"><span class="type">${ic(TYPES[t]?.icon || 'bolt')}${TYPES[t]?.name || t}</span>
       <div class="bar"><i style="width:${(sec / max) * 100}%"></i></div><span class="num">${fmtHours(sec)}</span></div>`)
     .join('') || '<p class="muted">Noch keine Aktivitäten in diesem Zeitraum.</p>';
 }
@@ -310,9 +319,10 @@ function renderPRs() {
   prs.push(...strengthPRs());
 
   $('#prs').innerHTML = prs.map(([label, value, a, extra]) => `
-    <div class="pr"${a ? ` data-id="${a.id}" style="cursor:pointer"` : ''}>
-      <div class="label">${label}</div><div class="value">${value}</div>
-      <div class="sub">${a ? esc(a.title) + ' · ' + fmtDate(a.date) : ''}${extra ? (a ? ' · ' : '') + extra : ''}</div>
+    <div class="pr"${a ? ` data-id="${a.id}"` : ''}>
+      <div><div class="label">${label}</div>
+      <div class="sub">${a ? esc(a.title) + ' · ' + fmtDate(a.date) : ''}${extra ? (a ? ' · ' : '') + extra : ''}</div></div>
+      <div class="value">${value}</div>
     </div>`).join('') || '<p class="muted">Trag deine erste Aktivität ein, um Bestleistungen zu sammeln.</p>';
 }
 
@@ -349,8 +359,8 @@ function renderFeed() {
     .filter((a) => !filter || a.type === filter)
     .sort((a, b) => (b.date + (b.createdAt || '')).localeCompare(a.date + (a.createdAt || '')));
   if (!list.length) {
-    $('#feed').innerHTML = `<div class="card empty">Noch keine Aktivitäten.<br><br>
-      <button class="btn primary" data-goto="add">+ Erste Aktivität eintragen</button></div>`;
+    $('#feed').innerHTML = `<div class="card empty"><p>${filter ? 'Keine Aktivitäten dieser Sportart.' : 'Noch keine Aktivitäten.'}</p>
+      <button class="btn primary" data-goto="add">${ic('plus')}Aktivität eintragen</button></div>`;
     return;
   }
   $('#feed').innerHTML = list.map((a) => {
@@ -366,10 +376,10 @@ function renderFeed() {
       stats.push(`<div><div class="label">Sätze</div><div class="value">${sets}</div></div>`);
       if (vol) stats.push(`<div><div class="label">Volumen</div><div class="value">${fmtKg(vol)}</div></div>`);
     }
-    if (a.feel) stats.push(`<div><div class="label">Gefühl</div><div class="value">${esc(a.feel)}</div></div>`);
+    if (a.feel) stats.push(`<div><div class="label">Gefühl</div><div class="value">${esc(feelText(a.feel))}</div></div>`);
     return `<div class="card activity" data-id="${a.id}">
-      <div class="act-top"><div class="act-icon">${t.icon}</div>
-        <div><div class="act-title">${esc(a.title)}</div><div class="act-meta">${t.name} · ${fmtDate(a.date)}${a.route ? ' · 📍 GPS' : ''}</div></div>
+      <div class="act-top"><div class="act-icon">${ic(t.icon)}</div>
+        <div><div class="act-title">${esc(a.title)}</div><div class="act-meta">${t.name} · ${fmtDate(a.date)}${a.route ? ` · ${ic('pin')}GPS` : ''}</div></div>
       </div>
       <div class="act-stats">${stats.join('')}</div>
       ${miniSplits(a)}
@@ -405,7 +415,7 @@ function splitTrend(splits) {
   const h = Math.floor(splits.length / 2);
   const a = splits.slice(0, h).reduce((x, y) => x + y, 0) / h;
   const b = splits.slice(-h).reduce((x, y) => x + y, 0) / h;
-  return b < a ? '✅ Negativ-Split' : 'Positiv-Split';
+  return b < a ? 'Negativ-Split: zweite Hälfte schneller' : 'Positiv-Split: zweite Hälfte langsamer';
 }
 
 function routeSvg(points) {
@@ -436,21 +446,21 @@ function showActivity(id) {
   const t = TYPES[a.type] || TYPES.other;
   const pace = a.distanceKm ? `<div><div class="label">${paceLabel(a.type)}</div><div class="value">${fmtPace(a.type, a.durationSec / a.distanceKm)}</div></div>` : '';
   openModal(`
-    <div class="act-top"><div class="act-icon">${t.icon}</div>
+    <div class="act-top"><div class="act-icon">${ic(t.icon)}</div>
       <div><h3>${esc(a.title)}</h3><div class="act-meta">${t.name} · ${fmtDate(a.date)}</div></div></div>
     <div class="act-stats">
       ${a.distanceKm ? `<div><div class="label">Distanz</div><div class="value">${fmtKm(a.distanceKm)} km</div></div>` : ''}
       <div><div class="label">Zeit</div><div class="value">${fmtDur(a.durationSec)}</div></div>
       ${pace}
-      ${a.feel ? `<div><div class="label">Gefühl</div><div class="value">${esc(a.feel)}</div></div>` : ''}
+      ${a.feel ? `<div><div class="label">Gefühl</div><div class="value">${esc(feelText(a.feel))}</div></div>` : ''}
     </div>
     ${a.notes ? `<p>${esc(a.notes)}</p>` : ''}
     ${a.route ? `<svg class="route" viewBox="0 0 300 200">${routeSvg(a.route)}</svg>` : ''}
     ${a.exercises?.length ? exercisesTable(a.exercises) : ''}
     ${a.splits?.length ? `<h3 style="margin-top:14px">Splits</h3><table class="splits">${splitsTable(a.type, a.splits, a.distanceKm)}</table>` : ''}
     <div class="modal-actions">
-      <button class="btn" data-edit="${a.id}">✏️ Bearbeiten</button>
-      <button class="btn danger" data-del="${a.id}">🗑 Löschen</button>
+      <button class="btn" data-edit="${a.id}">${ic('edit')}Bearbeiten</button>
+      <button class="btn danger" data-del="${a.id}">${ic('trash')}Löschen</button>
       <button class="btn" data-close>Schließen</button>
     </div>`);
 }
@@ -461,14 +471,14 @@ function showDay(k) {
   const isFuture = k > ymd(today());
   openModal(`
     <h3>${fmtDate(k)}</h3>
-    <p class="muted">${list.length ? `${list.length} Aktivität(en)` : mark === 'rest' ? '😴 Ruhetag' : mark === 'skip' ? '⏭️ Skip – ausgelassen' : 'Kein Eintrag'}</p>
-    ${list.map((a) => `<div class="card activity" data-id="${a.id}" style="margin-bottom:8px;padding:10px">
-      ${TYPES[a.type]?.icon || ''} <b>${esc(a.title)}</b> · ${fmtDur(a.durationSec)}${a.distanceKm ? ' · ' + fmtKm(a.distanceKm) + ' km' : ''}</div>`).join('')}
+    <p class="muted">${list.length ? `${list.length} ${list.length === 1 ? 'Aktivität' : 'Aktivitäten'}` : mark === 'rest' ? 'Ruhetag – hält deine Streak' : mark === 'skip' ? 'Skip – ausgelassen' : 'Kein Eintrag'}</p>
+    ${list.length ? `<div class="day-list">${list.map((a) => `<div class="day-item" data-id="${a.id}">
+      ${ic(TYPES[a.type]?.icon || 'bolt')}<span><b>${esc(a.title)}</b> · ${fmtDur(a.durationSec)}${a.distanceKm ? ' · ' + fmtKm(a.distanceKm) + ' km' : ''}</span></div>`).join('')}</div>` : ''}
     <div class="modal-actions">
-      ${isFuture ? '' : `<button class="btn primary" data-add-day="${k}">+ Aktivität</button>`}
+      ${isFuture ? '' : `<button class="btn primary" data-add-day="${k}">${ic('plus')}Aktivität eintragen</button>`}
       ${list.length ? '' : `
-        <button class="btn" data-mark="${k}:rest">😴 Ruhetag</button>
-        <button class="btn" data-mark="${k}:skip">⏭️ Skip</button>
+        <button class="btn" data-mark="${k}:rest">${ic('moon')}Als Ruhetag markieren</button>
+        <button class="btn" data-mark="${k}:skip">${ic('skip')}Als Skip markieren</button>
         ${mark ? `<button class="btn" data-mark="${k}:">Markierung entfernen</button>` : ''}`}
       <button class="btn" data-close>Schließen</button>
     </div>`);
@@ -476,10 +486,10 @@ function showDay(k) {
 
 /* ---------------- Formular ---------------- */
 function fillTypeSelects() {
-  const opts = Object.entries(TYPES).map(([k, t]) => `<option value="${k}">${t.icon} ${t.name}</option>`).join('');
+  const opts = Object.entries(TYPES).map(([k, t]) => `<option value="${k}">${t.name}</option>`).join('');
   $('#add-type').innerHTML = opts;
   $('#rec-type').innerHTML = Object.entries(TYPES).filter(([, t]) => t.distance)
-    .map(([k, t]) => `<option value="${k}">${t.icon} ${t.name}</option>`).join('');
+    .map(([k, t]) => `<option value="${k}">${t.name}</option>`).join('');
   $('#heat-filter').innerHTML += opts;
   $('#feed-filter').innerHTML += opts;
 }
@@ -555,7 +565,7 @@ function onSubmit(e) {
   else state.activities.push(a);
   delete state.marks[a.date]; // Ein Tag mit Aktivität ist kein Skip/Ruhetag mehr
   save();
-  toast(existing ? 'Aktivität aktualisiert' : 'Aktivität gespeichert 💪');
+  toast(existing ? 'Aktivität aktualisiert' : 'Aktivität gespeichert');
   resetForm();
   showView('feed');
 }
@@ -641,7 +651,7 @@ window.addEventListener('beforeunload', (e) => {
 
 function recButtons() {
   const active = rec.running && !rec.paused;
-  $('#rec-start').textContent = rec.running ? '▶ Weiter' : '▶ Start';
+  $('#rec-start span').textContent = rec.running ? 'Aufzeichnung fortsetzen' : 'Aufzeichnung starten';
   $('#rec-start').classList.toggle('hidden', active);
   $('#rec-pause').classList.toggle('hidden', !active);
   $('#rec-stop').classList.toggle('hidden', !rec.running);
@@ -721,7 +731,7 @@ function recStop() {
   state.activities.push(a);
   delete state.marks[date];
   save();
-  toast('Aktivität gespeichert 🎉');
+  toast('Aufzeichnung gespeichert');
   recUpdateUi();
   showView('feed');
   showActivity(a.id);
@@ -729,7 +739,7 @@ function recStop() {
 
 /* ---------------- Demo / Import / Export ---------------- */
 function loadDemo() {
-  if (state.activities.length && !confirm('Demo-Daten zu deinen bestehenden Daten hinzufügen?')) return;
+  if (state.activities.length && !confirm('Beispieldaten zu deinen bestehenden Daten hinzufügen?')) return;
   const rnd = (a, b) => a + Math.random() * (b - a);
   const t = today();
   for (let i = 300; i >= 0; i--) {
@@ -765,7 +775,7 @@ function loadDemo() {
   }
   save();
   renderAll();
-  toast('Demo-Daten geladen');
+  toast('Beispieldaten geladen');
   showView('dashboard');
 }
 

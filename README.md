@@ -25,6 +25,18 @@ in dem du siehst, an welchen Tagen du trainiert hast.
 - **Sportarten**: Laufen, Radfahren (km/h), Schwimmen (/100 m), Wandern, Gehen, Krafttraining, Yoga, Sonstiges
 - Export und Import als JSON, Demo-Daten zum Ausprobieren, Hell- und Dunkelmodus, für Handys optimiert
 
+## Design
+
+Das Design folgt den Regeln aus zwei Design-Skills ([taste-skill](https://github.com/leonxlnx/taste-skill) und [impeccable](https://github.com/pbakaus/impeccable)), die hier von Hand angewendet wurden:
+
+- **Eine Akzentfarbe** (Orange), sonst neutrale, warme Flächen. Kontraste geprüft: Text mindestens 4,5:1
+- **Schrift:** Barlow für Text, Barlow Semi Condensed für Überschriften und Zahlen (Ziffern mit fester Breite), lokal eingebunden (`fonts/`, SIL Open Font License)
+- **Eigenes Icon-Set** mit einer Strichstärke statt Emojis
+- **Feste Skalen** für Abstände (4–64 px), Radien (8/10/16 px) und Bewegung (150 ms Hover, 90 ms Klick)
+- Rahmen statt Schatten, keine verschachtelten Karten, keine Reihe gleicher Kennzahl-Kacheln
+- Gestaltete Browser-Elemente: Fokus-Ring, Textauswahl, Scrollbalken, Schalter, Auswahlfelder
+- Hell- und Dunkelmodus nach Systemeinstellung, „Bewegung reduzieren“ wird beachtet
+
 ## Aufs Handy bringen (Web-App)
 
 Pulse ist eine **Progressive Web App**: Sie wird über den Browser installiert, bekommt ein eigenes Icon
@@ -76,3 +88,4 @@ Alle Daten bleiben lokal im Browser bzw. in der App (`localStorage`). Mit **Expo
 | `manifest.json`| Web-App-Manifest (Name, Icons, Vollbild, Shortcuts) |
 | `sw.js`        | Service Worker für den Offline-Betrieb        |
 | `icons/`       | App-Icons                                     |
+| `fonts/`       | Schriftdateien (Barlow, SIL Open Font License) |

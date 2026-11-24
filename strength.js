@@ -101,8 +101,8 @@ function renderPlan() {
         <div class="muted">${e.sets} × ${e.reps} Wdh. · ${e.weight ? String(e.weight).replace('.', ',') + ' kg' : 'Körpergewicht'} · Tempo ${esc(e.tempo)} · Pause ${fmtDur(e.rest)}</div>
       </div>
       <div class="plan-act">
-        ${i ? `<button class="icon-btn" data-plan-up="${i}" aria-label="Nach oben">↑</button>` : ''}
-        <button class="icon-btn" data-plan-del="${i}" aria-label="Entfernen">✕</button>
+        ${i ? `<button class="icon-btn" data-plan-up="${i}" aria-label="${esc(e.name)} nach oben schieben">${ic('arrow-up')}</button>` : ''}
+        <button class="icon-btn" data-plan-del="${i}" aria-label="${esc(e.name)} entfernen">${ic('x')}</button>
       </div>
     </div>`).join('') : '<p class="muted">Füge unten deine erste Übung hinzu.</p>';
   $('#st-start').disabled = !list.length;
@@ -324,7 +324,9 @@ function setBar(pos) {
 }
 
 function renderRep() {
-  $('#pl-rep').textContent = W.repsDone;
+  const el = $('#pl-rep');
+  if (W.repsDone > Number(el.textContent)) { el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump'); }
+  el.textContent = W.repsDone;
   $$('#pl-repdots i').forEach((d, i) => d.classList.toggle('on', i < W.repsDone));
 }
 
@@ -352,13 +354,13 @@ function renderPlayerStatic() {
     $('#pl-next').textContent = `Als Nächstes: ${nx.name} · Satz ${lastOfEx ? 1 : W.setIdx + 2}/${nx.sets} · ${nx.reps} Wdh.`;
     $('#pl-done').max = ex.reps * 3;
   }
-  $('#pl-pause').textContent = W.paused ? '▶ Weiter' : '⏸ Pause';
+  $('#pl-pause').innerHTML = W.paused ? `${ic('play')}<span>Fortsetzen</span>` : `${ic('pause')}<span>Pausieren</span>`;
 }
 
 function togglePause() {
   W.paused = !W.paused;
   if (W.paused) window.speechSynthesis?.cancel();
-  $('#pl-pause').textContent = W.paused ? '▶ Weiter' : '⏸ Pause';
+  $('#pl-pause').innerHTML = W.paused ? `${ic('play')}<span>Fortsetzen</span>` : `${ic('pause')}<span>Pausieren</span>`;
   $('#pl-stage').classList.toggle('paused', W.paused);
 }
 
@@ -412,7 +414,7 @@ function saveWorkout(e) {
   state.activities.push(a);
   delete state.marks[date];
   save();
-  toast('Training gespeichert 💪');
+  toast('Training gespeichert');
   resetStrengthView();
   showView('feed');
   showActivity(a.id);
