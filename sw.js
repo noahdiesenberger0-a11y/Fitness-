@@ -1,7 +1,8 @@
 /* Service Worker: macht Pulse offline nutzbar. Bei Änderungen VERSION erhöhen. */
-const VERSION = 'pulse-v5';
+const VERSION = 'pulse-v6';
 const ASSETS = [
   './', './index.html', './styles.css', './app.js', './models.js', './strength.js', './manifest.json',
+  './exercise-anim/bicep-curl.webp',
   './icons/icon-192.png', './icons/icon-512.png', './icons/maskable-512.png',
   './icons/apple-touch-icon.png', './icons/favicon-32.png',
   './fonts/barlow-latin-400-normal.woff2', './fonts/barlow-latin-500-normal.woff2', './fonts/barlow-latin-600-normal.woff2',

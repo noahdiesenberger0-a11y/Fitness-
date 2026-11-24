@@ -358,6 +358,9 @@ input[type=date] { padding-right: var(--s-2); }
 .pl-phase.countdown { font-size: 64px; color: var(--accent); }
 .pl-anim { width: 100%; max-width: 360px; height: auto; display: block; margin: 0 auto; }
 .pl-stage.paused .pl-anim { opacity: .4; }
+.model-clip { display: block; width: 100%; max-width: 360px; aspect-ratio: 1; object-fit: contain; margin: 0 auto; }
+.plan-thumb.model-clip { width: 72px; height: 60px; max-width: none; }
+.clip-credit { display: block; text-align: center; font-size: 11px; color: var(--muted); margin-top: var(--s-1); }
 .pl-phasebar { height: 6px; background: var(--panel2); border-radius: 3px; overflow: hidden; max-width: 300px; margin: var(--s-1) auto var(--s-4); }
 .pl-phasebar i { display: block; height: 100%; width: 0; background: var(--accent); }
 .pl-phasebar i.down { background: var(--ink); }

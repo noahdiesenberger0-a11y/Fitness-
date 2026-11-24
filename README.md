@@ -89,3 +89,10 @@ Alle Daten bleiben lokal im Browser bzw. in der App (`localStorage`). Mit **Expo
 | `sw.js`        | Service Worker für den Offline-Betrieb        |
 | `icons/`       | App-Icons                                     |
 | `fonts/`       | Schriftdateien (Barlow, SIL Open Font License) |
+
+## Bildnachweis
+
+Die Übungs-Animation für den Bizeps-Curl (`exercise-anim/bicep-curl.webp`) stammt aus dem
+kostenlosen Preview-Paket von [RepDB](https://repdb.co/exercise-animations/) und steht unter
+[CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/): nur für nicht-kommerzielle Nutzung.
+Für eine kommerzielle App braucht es die RepDB Standard-Lizenz.

@@ -127,6 +127,14 @@ const MODELS = {
 };
 MODELS.custom = { ...MODELS.ohp, hold: 'dumbbell' };
 
+/* Fertige Animations-Clips (statt SVG-Figur), falls vorhanden.
+ * Quelle: RepDB Preview-Paket, Lizenz CC BY-NC 4.0 (nur nicht-kommerziell). */
+const CLIPS = {
+  curl: 'exercise-anim/bicep-curl.webp',
+};
+const CLIP_CREDIT = 'Animation: RepDB (repdb.co), CC BY-NC 4.0';
+function modelClip(exId) { return CLIPS[exId] || null; }
+
 /* ---------------- Mathe ---------------- */
 const rad = (d) => (d * Math.PI) / 180;
 const add = (p, ang, len) => [p[0] + Math.cos(rad(ang)) * len, p[1] + Math.sin(rad(ang)) * len];

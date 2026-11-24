@@ -95,7 +95,9 @@ function renderPlan() {
   $('#st-plan-sum').textContent = list.length ? `${totalSets} Sätze · ca. ${Math.round(estSec / 60)} min` : '';
   $('#st-plan').innerHTML = list.length ? list.map((e, i) => `
     <div class="plan-item">
-      <svg class="model plan-thumb" viewBox="${modelViewBox(e.exId)}" aria-hidden="true">${modelSvg(e.exId, 0.5)}</svg>
+      ${modelClip(e.exId)
+        ? `<img class="plan-thumb model-clip" src="${modelClip(e.exId)}" alt="" aria-hidden="true">`
+        : `<svg class="model plan-thumb" viewBox="${modelViewBox(e.exId)}" aria-hidden="true">${modelSvg(e.exId, 0.5)}</svg>`}
       <div class="plan-body">
         <div class="plan-name">${esc(e.name)}</div>
         <div class="muted">${e.sets} × ${e.reps} Wdh. · ${e.weight ? String(e.weight).replace('.', ',') + ' kg' : 'Körpergewicht'} · Tempo ${esc(e.tempo)} · Pause ${fmtDur(e.rest)}</div>
@@ -315,9 +317,20 @@ function updateRest() {
   if (left <= 0) nextSet();
 }
 
+/** Gibt es einen fertigen Clip, wird er statt der SVG-Figur gezeigt. true = Clip aktiv. */
+function showClip(svg, img, exId, credit) {
+  const src = modelClip(exId);
+  svg.classList.toggle('hidden', !!src);
+  img.classList.toggle('hidden', !src);
+  if (credit) { credit.classList.toggle('hidden', !src); credit.textContent = src ? CLIP_CREDIT : ''; }
+  if (src && img.getAttribute('src') !== src) img.setAttribute('src', src);
+  return !!src;
+}
+
 /** Figur zeichnen: 0 = Startposition, 1 = Endposition der Bewegung */
 function setBar(pos) {
   const svg = $('#pl-anim');
+  if (showClip(svg, $('#pl-anim-clip'), curEx().exId)) return;
   const vb = modelViewBox(curEx().exId);
   if (svg.getAttribute('viewBox') !== vb) svg.setAttribute('viewBox', vb);
   svg.innerHTML = modelSvg(curEx().exId, pos);
@@ -440,6 +453,7 @@ function previewLoop(ts) {
     let pos = 0.5 - Math.cos(t * 2 * Math.PI) / 2;
     if (def.start === 'top') pos = 1 - pos;
     const svg = $('#st-preview');
+    if (showClip(svg, $('#st-preview-clip'), id, $('#st-preview-credit'))) { previewRaf = requestAnimationFrame(previewLoop); return; }
     const vb = modelViewBox(id);
     if (svg.getAttribute('viewBox') !== vb) svg.setAttribute('viewBox', vb);
     svg.innerHTML = modelSvg(id, pos);
