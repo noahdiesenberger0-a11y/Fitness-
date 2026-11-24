@@ -80,8 +80,8 @@ den `service_role`/`secret`-Schlüssel niemals in die App schreiben.
 
 Das Design folgt den Regeln aus zwei Design-Skills ([taste-skill](https://github.com/leonxlnx/taste-skill) und [impeccable](https://github.com/pbakaus/impeccable)), die hier von Hand angewendet wurden:
 
-- **Farben:** Ägyptischblau steuert alles Antippbare. **Rot steht für Leistung und Schwung**: die Streak-Karte als rote Fläche, Rekorde, Fortschritt in %, erledigte Trainings der Woche, Kudos, Benachrichtigungen und der Kalender. Kontraste geprüft: Text mindestens 4,5:1
-- **Logo:** schlicht und flach: eine einfarbige Fläche mit 4 × 4 weißen Kacheln, die Kachel „heute“ unten rechts ist rot. Drei Icons (Blau, Hellblau, Rot), wählbar im Profil
+- **Farben 60:30:10:** 60 % Weiß bzw. helle Flächen, 30 % Ägyptischblau (je Tab eine blaue Hauptkarte: nächstes Training, Streak, Fortschritts-Diagramm, aktiver Split; dazu Kalender und Bedienung; Steinblau als Zwischenton), 10 % Scharlachrot (die eine Haupthandlung pro Bildschirm, Rekorde, Kudos, „heute“, Benachrichtigungen). Kontraste geprüft: Text mindestens 4,5:1
+- **Logo:** flach, 4 × 4 Kacheln, Flächen exakt 60:30:10: blaue Fläche, weiße Kacheln, vier rote Kacheln steigen diagonal an (Fortschritt). Drei Icons (Blau, Hellblau, Rot mit blauer Diagonale), wählbar im Profil; erzeugt mit `tools/make_icons.py`
 - **Am Handy wie eine App:** Tab-Leiste unten, durchscheinende Leisten, Großtitel, deren Titel beim Scrollen in die Kopfzeile wandert,
   Filter-Chips statt Auswahlfeldern, Listen wie in den iOS-Einstellungen, Bottom-Sheets zum Wegwischen, Scroll-Position pro Tab
 - **Schrift:** Barlow für Text, Barlow Semi Condensed für Überschriften und Zahlen (Ziffern mit fester Breite), lokal eingebunden (`fonts/`, SIL Open Font License)

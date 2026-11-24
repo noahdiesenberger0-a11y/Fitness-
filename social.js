@@ -247,9 +247,11 @@ function drawLogo(g, x, y, size, ring = true) {
     g.strokeStyle = '#ffffff'; g.lineWidth = Math.max(2, size * 0.04);
     g.beginPath(); g.roundRect(x, y, size, size, size * 0.22); g.stroke();
   }
+  // 60:30:10 – blaue Fläche, weiße Kacheln, rote Diagonale (Fortschritt)
+  const T = 82, G = 19, S0 = (512 - (4 * T + 3 * G)) / 2;
   for (let r = 0; r < 4; r++) for (let c = 0; c < 4; c++) {
-    g.fillStyle = r === 3 && c === 3 ? '#c8102e' : '#ffffff';
-    g.beginPath(); g.roundRect(x + (82 + c * 94) * k, y + (82 + r * 94) * k, 66 * k, 66 * k, 14 * k); g.fill();
+    g.fillStyle = r + c === 3 ? '#c8102e' : '#ffffff';
+    g.beginPath(); g.roundRect(x + (S0 + c * (T + G)) * k, y + (S0 + r * (T + G)) * k, T * k, T * k, 16 * k); g.fill();
   }
 }
 
