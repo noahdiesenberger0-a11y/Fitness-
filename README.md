@@ -11,6 +11,7 @@ und sehen, wie du stärker wirst. Mit Streaks und einem Aktivitätskalender wie 
   - Eigene Splits im Baukasten: Tage (z. B. Push, Pull, Legs), Übungen mit Sätzen, Wiederholungsbereich (8–12), Pause und Tempo
   - Fertige Vorlagen zum Übernehmen und Anpassen: Push/Pull/Legs, Oberkörper/Unterkörper, Ganzkörper 3×, Anfänger-Start, Bro-Split
   - Ein Split ist aktiv; die App schlägt automatisch den nächsten Tag vor
+  - Übungen direkt in der Split-Ansicht pro Tag hinzufügen; Vorlagen mit „Übernehmen und anpassen“ gleich im Baukasten öffnen
 - **Training**
   - Sätze abhaken (Gewicht × Wiederholungen); die Werte vom letzten Mal stehen schon drin
   - **Progressions-Tipp**: Wenn du letztes Mal alle Sätze am oberen Ende geschafft hast, schlägt die App mehr Gewicht vor
@@ -42,7 +43,9 @@ Die alten Daten bleiben zusätzlich unverändert im Browser gespeichert.
 ## Sozial (Etappe 3)
 
 - **Benutzername:** Nach der Anmeldung wählst du deinen `@namen` (a–z, 0–9, Punkt, Unterstrich; einmalig vergeben)
-- **Leute finden:** Suche nach Benutzername oder Name, oder **Profil teilen** mit Link und **QR-Code** (wie bei Snapchat).
+- **Leute finden:** Suche nach Benutzername oder Name, oder **Profil teilen** mit Link und eigenem **Pulse-Code** (wie ein Snapcode):
+  ein QR-Code im Stil des Logos (rote Verlaufs-Kacheln, blaue Ecken, Logo in der Mitte) auf einer blauen Karte mit deinem @namen,
+  als Bild teilbar. Höchste Fehlerkorrektur, mit einem QR-Leser in vielen Größen getestet.
   Wer den Link `…/index.html?u=deinname` öffnet, sieht dein Profil und kann dir mit einem Tipp folgen
   (ohne Konto: erst registrieren, danach wird automatisch gefolgt)
 - **Feed** (eigener Tab): nur deine Trainings und die der Leute, denen du folgst. Kein „Für dich“

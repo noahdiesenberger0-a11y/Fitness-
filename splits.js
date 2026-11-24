@@ -53,14 +53,16 @@ function showSplit(id, isTemplate) {
     <h3>${esc(s.name)}</h3>
     <p class="muted">${esc(splitMeta(s))}</p>
     ${s.description ? `<p class="notes">${esc(s.description)}</p>` : ''}
-    <div class="sd-days">${s.days.map((d) => `
+    <div class="sd-days">${s.days.map((d, di) => `
       <section class="sd-day"><h4>${esc(d.name)}</h4>
         <ul class="next-list">${d.exercises.map((e) => `<li>${exThumb(e.exId, 'mini-thumb')}<span>${esc(e.name || exInfo(e.exId).name)}</span>
           <span class="muted num">${e.sets} × ${repRange(e)} · ${fmtDur(e.rest)}</span></li>`).join('')}</ul>
+        ${isTemplate ? '' : `<button class="btn sm sd-add" data-quick-add="${s.id}:${di}">${ic('plus')}Übung hinzufügen</button>`}
       </section>`).join('')}</div>
     <div class="modal-actions">
       ${isTemplate
-        ? `<button class="btn primary" data-adopt="${s.id}">${ic('copy')}Split übernehmen</button>`
+        ? `<button class="btn primary" data-adopt="${s.id}">${ic('copy')}Split übernehmen</button>
+           <button class="btn" data-adopt-edit="${s.id}">${ic('edit')}Übernehmen und anpassen</button>`
         : `${isActive ? '' : `<button class="btn primary" data-activate="${s.id}">${ic('check')}Als aktiv setzen</button>`}
            <button class="btn" data-edit-split="${s.id}">${ic('edit')}Bearbeiten</button>
            <button class="btn" data-dup-split="${s.id}">${ic('copy')}Duplizieren</button>
@@ -72,7 +74,7 @@ function showSplit(id, isTemplate) {
     </div>`, 'tall');
 }
 
-function adoptTemplate(id) {
+function adoptTemplate(id, thenEdit) {
   const t = TEMPLATES.find((x) => x.id === id);
   const s = cloneSplit(t, { source: { templateId: t.id, author: 'Pulse' } });
   state.splits.push(s);
@@ -80,7 +82,20 @@ function adoptTemplate(id) {
   save();
   closeModal();
   toast(`„${esc(s.name)}“ übernommen und aktiv`);
-  renderSplits();
+  if (thenEdit) editSplit(s.id); else renderSplits();
+}
+
+/** Übung direkt aus der Split-Ansicht zu einem Tag hinzufügen */
+function quickAddExercise(splitId, di) {
+  openPicker((exId) => {
+    const s = state.splits.find((x) => x.id === splitId);
+    if (!s || !s.days[di]) return;
+    s.days[di].exercises.push({ exId, name: exInfo(exId).name, sets: 3, repsMin: 8, repsMax: 12, rest: 90, tempo: '2-0-1-0' });
+    save();
+    toast(`${exInfo(exId).name} zu ${s.days[di].name} hinzugefügt`);
+    showSplit(splitId);
+    if (currentView === 'splits') renderSplits();
+  });
 }
 
 /* ---------------- Baukasten ---------------- */
@@ -157,12 +172,14 @@ function saveDraft() {
 /* ---------------- Events ---------------- */
 function initSplits() {
   document.addEventListener('click', (e) => {
-    const el = e.target.closest('[data-split],[data-template],[data-adopt],[data-activate],[data-edit-split],[data-dup-split],[data-del-split],[data-new-split],[data-add-ex],[data-ex-up],[data-ex-del],[data-day-up],[data-day-del],[data-add-day],[data-save-split],[data-cancel-split]');
+    const el = e.target.closest('[data-split],[data-template],[data-adopt],[data-adopt-edit],[data-quick-add],[data-activate],[data-edit-split],[data-dup-split],[data-del-split],[data-new-split],[data-add-ex],[data-ex-up],[data-ex-del],[data-day-up],[data-day-del],[data-add-day],[data-save-split],[data-cancel-split]');
     if (!el) return;
     const ds = el.dataset;
     if (ds.split) showSplit(ds.split);
     else if (ds.template) showSplit(ds.template, true);
     else if (ds.adopt) adoptTemplate(ds.adopt);
+    else if (ds.adoptEdit) adoptTemplate(ds.adoptEdit, true);
+    else if (ds.quickAdd) { const [sid, di] = ds.quickAdd.split(':'); quickAddExercise(sid, +di); }
     else if (ds.activate) { state.activeSplitId = ds.activate; save(); closeModal(); toast('Aktiver Split geändert'); renderSplits(); }
     else if (ds.editSplit) editSplit(ds.editSplit);
     else if (ds.dupSplit) {

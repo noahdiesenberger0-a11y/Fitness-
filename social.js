@@ -61,7 +61,7 @@ function onSocialSignOut() {
 /* ---------------- Hilfen ---------------- */
 const displayName = (p) => (p?.display_name || '').trim() || (p?.username ? '@' + p.username : 'Anonym');
 const avatar = (p, cls = 'sm') => `<span class="avatar ${cls}" aria-hidden="true">${esc(displayName(p).replace('@', '').charAt(0).toUpperCase() || '?')}</span>`;
-const profileUrl = (username) => location.origin + location.pathname + '?u=' + encodeURIComponent(username);
+const profileUrl = (username) => location.origin + location.pathname.replace(/index\.html$/, '') + '?u=' + encodeURIComponent(username);
 
 function timeAgo(iso) {
   const s = Math.max(0, (Date.now() - new Date(iso).getTime()) / 1000);
@@ -160,30 +160,153 @@ async function renderMySocial() {
   if (el) el.textContent = count ?? 0;
 }
 
-function shareProfile() {
+/* ---------------- Pulse-Code: eigener QR-Code im Stil des Logos ---------------- */
+const CODE_W = 1080, CODE_H = 1400;
+/** Zeichnet die Profil-Karte mit QR-Code auf ein Canvas und gibt es zurück */
+async function drawPulseCode(url, username) {
+  try { await document.fonts.ready; } catch (e) { /* ignore */ }
+  const qr = qrcode(0, 'H'); // höchste Fehlerkorrektur: das Logo in der Mitte darf Punkte verdecken
+  qr.addData(url);
+  qr.make();
+  const n = qr.getModuleCount();
+  const cv = document.createElement('canvas');
+  cv.width = CODE_W; cv.height = CODE_H;
+  const g = cv.getContext('2d');
+  const rr = (x, y, w, h, r) => { g.beginPath(); g.roundRect(x, y, w, h, r); };
+  const grad = (x, y, w, h, c1, c2) => { const l = g.createLinearGradient(x, y, x + w, y + h); l.addColorStop(0, c1); l.addColorStop(1, c2); return l; };
+
+  // Karte: Ägyptischblau mit leichtem Verlauf, wie das App-Icon
+  g.fillStyle = grad(0, 0, 0, CODE_H, '#1a40b8', '#0c2a8a');
+  rr(0, 0, CODE_W, CODE_H, 96); g.fill();
+
+  // Kopf: kleines Logo + Schriftzug
+  drawLogo(g, 96, 84, 76);
+  g.fillStyle = '#ffffff';
+  g.font = '700 64px "Barlow Semi Condensed", Barlow, system-ui, sans-serif';
+  g.textBaseline = 'middle';
+  g.fillText('Pulse', 196, 124);
+
+  // Weiße Fläche für den Code (Ruhezone: 3 Module)
+  const plate = 840, px = (CODE_W - plate) / 2, py = 220;
+  g.fillStyle = '#ffffff';
+  rr(px, py, plate, plate, 64); g.fill();
+  const quiet = 3;
+  const m = plate / (n + quiet * 2);
+  const ox = px + quiet * m, oy = py + quiet * m;
+
+  // Freie Mitte für das Logo
+  const hole = Math.round(n * 0.2) | 1;
+  const h0 = Math.floor((n - hole) / 2), h1 = h0 + hole;
+  const inFinder = (r, c) => (r < 7 && c < 7) || (r < 7 && c >= n - 7) || (r >= n - 7 && c < 7);
+  const inHole = (r, c) => r >= h0 - 1 && r < h1 + 1 && c >= h0 - 1 && c < h1 + 1;
+
+  // Module als rote Kacheln mit eigenem Verlauf (dunkel genug, damit Kameras sie sicher lesen)
+  const SHADES = [['#8e1026', '#b3152d'], ['#b3152d', '#d81d36'], ['#c81a33', '#e8263d'], ['#d81d36', '#f2304a']];
+  const pad = m * 0.05, tile = m - pad * 2, rad = m * 0.24;
+  for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) {
+    if (!qr.isDark(r, c) || inFinder(r, c) || inHole(r, c)) continue;
+    const [c1, c2] = SHADES[((r * 7 + c * 13) ^ (r * c)) & 3];
+    const x = ox + c * m + pad, y = oy + r * m + pad;
+    g.fillStyle = grad(x, y, tile, tile, c1, c2);
+    rr(x, y, tile, tile, rad); g.fill();
+  }
+
+  // Ecken-Markierungen: abgerundet, Ägyptischblau
+  for (const [r, c] of [[0, 0], [0, n - 7], [n - 7, 0]]) {
+    const x = ox + c * m, y = oy + r * m;
+    g.fillStyle = grad(x, y, 7 * m, 7 * m, '#1a40b8', '#0c2a8a');
+    rr(x + pad, y + pad, 7 * m - pad * 2, 7 * m - pad * 2, m * 1.9); g.fill();
+    g.fillStyle = '#ffffff';
+    rr(x + m, y + m, 5 * m, 5 * m, m * 1.3); g.fill();
+    g.fillStyle = grad(x, y, 7 * m, 7 * m, '#1a40b8', '#0c2a8a');
+    rr(x + 2 * m, y + 2 * m, 3 * m, 3 * m, m * 0.9); g.fill();
+  }
+
+  // Logo in der Mitte
+  const ls = hole * m;
+  drawLogo(g, ox + h0 * m, oy + h0 * m, ls);
+
+  // Name und Hinweis
+  g.textAlign = 'center';
+  g.fillStyle = '#ffffff';
+  g.font = '700 88px "Barlow Semi Condensed", Barlow, system-ui, sans-serif';
+  let name = '@' + username;
+  while (g.measureText(name).width > CODE_W - 140 && g.font.match(/\d+px/)) {
+    const size = parseInt(g.font.match(/(\d+)px/)[1], 10) - 4;
+    g.font = `700 ${size}px "Barlow Semi Condensed", Barlow, system-ui, sans-serif`;
+  }
+  g.fillText(name, CODE_W / 2, 1180);
+  g.fillStyle = '#c3cfdd';
+  g.font = '500 40px Barlow, system-ui, sans-serif';
+  g.fillText('Scannen, um mir auf Pulse zu folgen', CODE_W / 2, 1262);
+  return cv;
+}
+/** Das App-Logo: blaue Fläche mit 4 × 4 roten Verlaufs-Kacheln */
+function drawLogo(g, x, y, size) {
+  const P = [[1, 0, 2, 1], [2, 1, 3, 0], [0, 3, 2, 4], [3, 2, 4, 4]];
+  const C = { 0: ['#6a0e1e', '#841326'], 1: ['#9c1229', '#bf1831'], 2: ['#cc1a33', '#e5233c'], 3: ['#e5233c', '#ff3d52'], 4: ['#ff3348', '#ff7482'] };
+  const k = size / 512;
+  const bg = g.createLinearGradient(x, y, x, y + size);
+  bg.addColorStop(0, '#1a40b8'); bg.addColorStop(1, '#0c2a8a');
+  g.fillStyle = bg;
+  g.beginPath(); g.roundRect(x, y, size, size, size * 0.22); g.fill();
+  g.save();
+  g.strokeStyle = '#ffffff'; g.lineWidth = Math.max(2, size * 0.035);
+  g.beginPath(); g.roundRect(x, y, size, size, size * 0.22); g.stroke();
+  g.restore();
+  for (let r = 0; r < 4; r++) for (let c = 0; c < 4; c++) {
+    const tx = x + (82 + c * 94) * k, ty = y + (82 + r * 94) * k, ts = 66 * k;
+    const [c1, c2] = C[P[r][c]];
+    const l = g.createLinearGradient(tx, ty, tx + ts, ty + ts);
+    l.addColorStop(0, c1); l.addColorStop(1, c2);
+    g.fillStyle = l;
+    g.beginPath(); g.roundRect(tx, ty, ts, ts, 14 * k); g.fill();
+  }
+}
+
+let codeBlob = null;
+async function shareProfile() {
   if (!user) return needAccount('Zum Teilen brauchst du ein Konto');
   if (!social.me?.username) return usernameForm(true);
   const url = profileUrl(social.me.username);
-  let svg = '';
-  try {
-    const qr = qrcode(0, 'M');
-    qr.addData(url);
-    qr.make();
-    svg = qr.createSvgTag({ cellSize: 6, margin: 2, scalable: true });
-  } catch (e) { /* ohne QR */ }
   openModal(`
     <div class="share-card">
-      ${avatar(social.me, 'lg')}
-      <h3>@${esc(social.me.username)}</h3>
-      <p class="muted">Lass den Code scannen oder schick den Link. Wer ihn öffnet, kann dir mit einem Tipp folgen.</p>
-      ${svg ? `<div class="qr" role="img" aria-label="QR-Code mit deinem Profil-Link">${svg}</div>` : ''}
-      <div class="share-url num">${esc(url.replace(/^https?:\/\//, ''))}</div>
+      <div class="pulse-code" id="pulse-code" role="img" aria-label="Dein Pulse-Code für @${esc(social.me.username)}"></div>
+      <p class="muted">Lass den Code scannen oder schick ihn als Bild oder Link. Wer ihn öffnet, kann dir mit einem Tipp folgen.</p>
     </div>
     <div class="modal-actions">
-      ${navigator.share ? `<button class="btn primary" data-share-link>${ic('share')}Link teilen</button>` : ''}
-      <button class="btn ${navigator.share ? '' : 'primary'}" data-copy-link>${ic('copy')}Link kopieren</button>
+      <button class="btn primary" data-share-code>${ic('share')}Code teilen</button>
+      ${navigator.share ? `<button class="btn" data-share-link>${ic('share')}Link teilen</button>` : ''}
+      <button class="btn" data-copy-link>${ic('copy')}Link kopieren</button>
       <button class="btn" data-close>Schließen</button>
-    </div>`);
+    </div>`, 'tall');
+  try {
+    const cv = await drawPulseCode(url, social.me.username);
+    const img = new Image();
+    img.src = cv.toDataURL('image/png');
+    img.alt = '';
+    $('#pulse-code')?.replaceChildren(img);
+    codeBlob = await new Promise((res) => cv.toBlob(res, 'image/png'));
+  } catch (e) {
+    $('#pulse-code')?.replaceChildren(Object.assign(document.createElement('p'), { className: 'muted', textContent: url }));
+  }
+}
+/** Code als Bild teilen (Teilen-Menü) oder herunterladen */
+async function shareCode() {
+  if (!codeBlob) return;
+  const name = `pulse-${social.me.username}.png`;
+  const file = new File([codeBlob], name, { type: 'image/png' });
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    try { await navigator.share({ files: [file], title: 'Mein Pulse-Code', text: `Folge mir auf Pulse: ${profileUrl(social.me.username)}` }); }
+    catch (e) { /* abgebrochen */ }
+    return;
+  }
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(codeBlob);
+  a.download = name;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  toast('Bild gespeichert');
 }
 async function shareLink() {
   const url = profileUrl(social.me.username);
@@ -633,7 +756,7 @@ async function showNotifs() {
 
 /* ---------------- Events ---------------- */
 document.addEventListener('click', (e) => {
-  const el = e.target.closest('[data-follow],[data-user],[data-fw],[data-kudos],[data-kudos-list],[data-people],[data-notifs],[data-share-profile],[data-share-link],[data-copy-link],[data-username],[data-follow-list],[data-feed-more],[data-del-comment]');
+  const el = e.target.closest('[data-follow],[data-user],[data-fw],[data-kudos],[data-kudos-list],[data-people],[data-notifs],[data-share-profile],[data-share-code],[data-share-link],[data-copy-link],[data-username],[data-follow-list],[data-feed-more],[data-del-comment]');
   if (!el || !sb) return;
   const ds = el.dataset;
   if (ds.follow) { e.stopPropagation(); followUser(ds.follow); }
@@ -644,6 +767,7 @@ document.addEventListener('click', (e) => {
   else if (ds.people !== undefined) peopleSearch();
   else if (ds.notifs !== undefined) showNotifs();
   else if (ds.shareProfile !== undefined) shareProfile();
+  else if (ds.shareCode !== undefined) shareCode();
   else if (ds.shareLink !== undefined) shareLink();
   else if (ds.copyLink !== undefined) copyLink();
   else if (ds.username !== undefined) usernameForm(!social.me?.username);
