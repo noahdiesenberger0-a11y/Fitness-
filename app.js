@@ -435,7 +435,10 @@ function routeSvg(points) {
 
 /* ---------------- Modals ---------------- */
 function openModal(html) {
-  $('#modal-box').innerHTML = html;
+  const box = $('#modal-box');
+  box.innerHTML = html;
+  box.style.transform = ''; box.style.transition = '';
+  box.scrollTop = 0;
   $('#modal').classList.remove('hidden');
 }
 function closeModal() { $('#modal').classList.add('hidden'); }
@@ -801,13 +804,95 @@ function importData(file) {
 }
 
 /* ---------------- Navigation & Events ---------------- */
+const VIEW_TITLES = { dashboard: 'Start', feed: 'Aktivitäten', record: 'Aufzeichnen', strength: 'Kraft', profile: 'Profil', add: 'Eintragen' };
+const PUSHED = { add: 'feed' }; // Unterseiten: Zurück führt zu diesem Tab
+const scrollMemory = {};
+let currentView = 'dashboard';
+
 function showView(v) {
+  if (v === currentView && !PUSHED[v]) { window.scrollTo({ top: 0, behavior: 'smooth' }); return; }
+  scrollMemory[currentView] = window.scrollY;
+  currentView = v;
   $$('.view').forEach((el) => el.classList.toggle('active', el.id === 'view-' + v));
-  $$('#tabs button').forEach((b) => b.classList.toggle('active', b.dataset.view === v));
+  const tab = PUSHED[v] || v;
+  $$('#tabs button').forEach((b) => {
+    b.classList.toggle('active', b.dataset.view === tab);
+    if (b.dataset.view === tab) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
+  });
+  $('#nav-title').textContent = v === 'add' ? $('#form-title').textContent : VIEW_TITLES[v] || '';
+  $('#nav-back').classList.toggle('hidden', !PUSHED[v]);
+  document.body.classList.toggle('pushed', !!PUSHED[v]);
   if (v === 'dashboard') renderDashboard();
   if (v === 'feed') renderFeed();
-  window.scrollTo(0, 0);
+  if (v === 'profile') renderProfile();
+  window.scrollTo(0, PUSHED[v] ? 0 : scrollMemory[v] || 0);
+  onScroll();
 }
+function onScroll() { document.body.classList.toggle('scrolled', window.scrollY > 36); }
+
+/* ---------------- Filter-Chips (ersetzen die Auswahlfelder) ---------------- */
+function buildChips() {
+  $$('.chips[data-for]').forEach((box) => {
+    const sel = document.getElementById(box.dataset.for);
+    box.innerHTML = [...sel.options].map((o) =>
+      `<button type="button" data-chip="${o.value}" aria-pressed="${o.value === sel.value}">${o.value ? esc(o.text) : 'Alle'}</button>`).join('');
+    box.addEventListener('click', (e) => {
+      const b = e.target.closest('[data-chip]');
+      if (!b) return;
+      sel.value = b.dataset.chip;
+      box.querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', x === b));
+      b.scrollIntoView({ inline: 'nearest', block: 'nearest', behavior: 'smooth' });
+      sel.dispatchEvent(new Event('change'));
+    });
+  });
+}
+
+/* ---------------- Profil: App-Farbe ---------------- */
+const APP_COLORS = { volt: 'Volt', koralle: 'Koralle', ozean: 'Ozean', violett: 'Violett' };
+function currentColor() { return document.documentElement.dataset.color || 'volt'; }
+function renderProfile() {
+  const c = currentColor();
+  $('#color-pick').innerHTML = Object.entries(APP_COLORS).map(([k, name]) =>
+    `<button class="color-opt" role="radio" aria-checked="${k === c}" data-color="${k}">
+      <img src="icons/${k}/icon-192.png" alt="" width="60" height="60" /><span>${name}</span></button>`).join('');
+  const standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+  $('#color-hint').textContent = standalone
+    ? 'Die Farbe gilt sofort in der App. Für das neue Icon auf dem Home-Bildschirm: Pulse dort entfernen und über Teilen → „Zum Home-Bildschirm“ neu hinzufügen. Deine Daten bleiben erhalten.'
+    : 'Die Farbe gilt für die App und für das Icon, wenn du Pulse zum Home-Bildschirm hinzufügst.';
+}
+function setColor(c) {
+  if (!APP_COLORS[c]) return;
+  document.documentElement.dataset.color = c;
+  try { localStorage.setItem('pulse.color', c); } catch (e) { /* ignore */ }
+  $('#l-manifest').href = `manifest-${c}.json`;
+  $('#l-favicon').href = `icons/${c}/favicon-32.png`;
+  $('#l-touch').href = `icons/${c}/apple-touch-icon.png`;
+  haptic();
+  renderProfile();
+}
+function haptic() { try { navigator.vibrate && navigator.vibrate(8); } catch (e) { /* ignore */ } }
+
+/* ---------------- Bottom-Sheet nach unten wegwischen ---------------- */
+function setupSheetSwipe() {
+  const box = $('#modal-box');
+  let y0 = null, dy = 0;
+  box.addEventListener('touchstart', (e) => {
+    y0 = box.scrollTop <= 0 ? e.touches[0].clientY : null; dy = 0;
+  }, { passive: true });
+  box.addEventListener('touchmove', (e) => {
+    if (y0 === null) return;
+    dy = Math.max(0, e.touches[0].clientY - y0);
+    if (dy > 0) { box.style.transition = 'none'; box.style.transform = `translateY(${dy}px)`; }
+  }, { passive: true });
+  box.addEventListener('touchend', () => {
+    if (y0 === null) return;
+    box.style.transition = 'transform 220ms cubic-bezier(.22, 1, .36, 1)';
+    if (dy > 110) { box.style.transform = 'translateY(100%)'; setTimeout(closeModal, 180); }
+    else box.style.transform = '';
+    y0 = null;
+  });
+}
+
 function renderAll() { renderDashboard(); renderFeed(); }
 
 function setMark(k, value) {
@@ -820,9 +905,11 @@ document.addEventListener('click', (e) => {
   const el = e.target.closest('[data-view],[data-goto],[data-day],[data-id],[data-edit],[data-del],[data-close],[data-mark],[data-add-day],[data-p]');
   if (e.target.id === 'modal') return closeModal();
   if (e.target.closest('[data-demo]')) return loadDemo();
+  const col = e.target.closest('.color-opt');
+  if (col) return setColor(col.dataset.color);
   if (!el) return;
   const ds = el.dataset;
-  if (ds.view) showView(ds.view);
+  if (ds.view) { haptic(); showView(ds.view); }
   else if (ds.goto) showView(ds.goto);
   else if (ds.day) showDay(ds.day);
   else if (ds.edit) editActivity(ds.edit);
@@ -859,9 +946,13 @@ function init() {
     if (!confirm('Wirklich ALLE Daten löschen?')) return;
     state = { activities: [], marks: {} }; save(); renderAll(); toast('Alle Daten gelöscht');
   });
+  buildChips();
+  $('#nav-back').addEventListener('click', () => showView(PUSHED[currentView] || 'dashboard'));
+  window.addEventListener('scroll', onScroll, { passive: true });
+  setupSheetSwipe();
   renderAll();
   const hashView = location.hash.slice(1);
-  if (['dashboard', 'feed', 'strength', 'record', 'add'].includes(hashView)) showView(hashView);
+  if (VIEW_TITLES[hashView]) showView(hashView);
   recRestore();
   setupInstall();
   if ('serviceWorker' in navigator && location.protocol !== 'file:') {

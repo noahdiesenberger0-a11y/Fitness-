@@ -2,9 +2,19 @@
 <html lang="de">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content" />
   <meta name="theme-color" content="#f6f5f2" media="(prefers-color-scheme: light)" />
   <meta name="theme-color" content="#100f0e" media="(prefers-color-scheme: dark)" />
+  <script>
+    /* App-Farbe vor dem ersten Zeichnen setzen (Akzent, Icon, Manifest) */
+    (function () {
+      var c = 'volt';
+      try { c = localStorage.getItem('pulse.color') || c; } catch (e) {}
+      if (!/^(volt|koralle|ozean|violett)$/.test(c)) c = 'volt';
+      document.documentElement.dataset.color = c;
+      window.PULSE_COLOR = c;
+    })();
+  </script>
   <title>Pulse: Trainingstagebuch mit Streaks, Splits und Krafttraining</title>
   <meta name="description" content="Trainings tracken: Aktivitätskalender, Streaks, km-Splits, GPS-Aufzeichnung und Krafttraining mit Tempo-Animation." />
   <meta property="og:title" content="Pulse – Trainingstagebuch" />
@@ -15,9 +25,16 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="apple-mobile-web-app-title" content="Pulse" />
   <meta name="format-detection" content="telephone=no" />
-  <link rel="manifest" href="manifest.json" />
-  <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png" />
-  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+  <link rel="manifest" id="l-manifest" href="manifest.json" />
+  <link rel="icon" id="l-favicon" type="image/png" sizes="32x32" href="icons/favicon-32.png" />
+  <link rel="apple-touch-icon" id="l-touch" href="icons/apple-touch-icon.png" />
+  <script>
+    (function (c) {
+      document.getElementById('l-manifest').href = 'manifest-' + c + '.json';
+      document.getElementById('l-favicon').href = 'icons/' + c + '/favicon-32.png';
+      document.getElementById('l-touch').href = 'icons/' + c + '/apple-touch-icon.png';
+    })(window.PULSE_COLOR);
+  </script>
   <link rel="preload" href="fonts/barlow-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="preload" href="fonts/barlow-semi-condensed-latin-700-normal.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="stylesheet" href="styles.css" />
@@ -55,6 +72,9 @@
       <symbol id="i-hike" viewBox="0 0 24 24"><path d="M2.5 19.5L9 9l4 6.5 2.5-4 6 8z"/><circle cx="17" cy="5.5" r="1.8"/></symbol>
       <symbol id="i-walk" viewBox="0 0 24 24"><circle cx="12.5" cy="4.5" r="1.8"/><path d="M12 8l-1.5 6 3 3v4M12 8l3 3.5 2.5.5M11.5 8.5L8 11v3M10.5 14l-2.5 7"/></symbol>
       <symbol id="i-yoga" viewBox="0 0 24 24"><circle cx="12" cy="4.5" r="1.8"/><path d="M12 8v6M4.5 10.5l7.5 2 7.5-2M7 19.5l5-5.5 5 5.5M4.5 19.5h15"/></symbol>
+      <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4.5 20.5a7.5 7.5 0 0 1 15 0"/></symbol>
+      <symbol id="i-chevron" viewBox="0 0 24 24"><path d="M9.5 6l6 6-6 6"/></symbol>
+      <symbol id="i-back" viewBox="0 0 24 24"><path d="M14.5 6l-6 6 6 6"/></symbol>
       <symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13 3L5.5 13.5h6L10.5 21 18 10.5h-6z"/></symbol>
     </defs>
   </svg>
@@ -62,13 +82,15 @@
   <a class="skip-link" href="#main">Zum Inhalt springen</a>
 
   <header class="topbar">
+    <button class="nav-back hidden" id="nav-back" aria-label="Zurück"><svg class="i" aria-hidden="true"><use href="#i-back"/></svg></button>
     <div class="brand"><svg class="i logo" aria-hidden="true"><use href="#i-logo"/></svg>Pulse</div>
+    <div class="nav-title" id="nav-title" aria-hidden="true">Start</div>
     <nav class="tabs" id="tabs" aria-label="Hauptnavigation">
-      <button data-view="dashboard" class="active"><svg class="i" aria-hidden="true"><use href="#i-home"/></svg><span>Übersicht</span></button>
+      <button data-view="dashboard" class="active"><svg class="i" aria-hidden="true"><use href="#i-home"/></svg><span>Start</span></button>
       <button data-view="feed"><svg class="i" aria-hidden="true"><use href="#i-list"/></svg><span>Aktivitäten</span></button>
+      <button data-view="record" class="tab-rec"><span class="rec-btn"><svg class="i rec-dot" aria-hidden="true"><use href="#i-record"/></svg></span><span>Aufzeichnen</span></button>
       <button data-view="strength"><svg class="i" aria-hidden="true"><use href="#i-dumbbell"/></svg><span>Kraft</span></button>
-      <button data-view="record"><svg class="i rec-dot" aria-hidden="true"><use href="#i-record"/></svg><span>Aufzeichnen</span></button>
-      <button data-view="add"><svg class="i" aria-hidden="true"><use href="#i-plus"/></svg><span>Eintragen</span></button>
+      <button data-view="profile"><svg class="i" aria-hidden="true"><use href="#i-user"/></svg><span>Profil</span></button>
     </nav>
   </header>
 
@@ -84,7 +106,7 @@
 
     <!-- ÜBERSICHT -->
     <section id="view-dashboard" class="view active" aria-labelledby="h-dashboard">
-      <h1 class="sr-only" id="h-dashboard">Übersicht</h1>
+      <h1 class="large-title" id="h-dashboard">Start</h1>
 
       <div class="card welcome hidden" id="welcome">
         <h2>Willkommen bei Pulse</h2>
@@ -114,9 +136,9 @@
         <div class="heat-block">
           <div class="card-head">
             <h2 id="contrib-title">0 Aktivitäten im letzten Jahr</h2>
-            <label class="sr-only" for="heat-filter">Sportart filtern</label>
-            <select id="heat-filter" class="select-sm"><option value="">Alle Sportarten</option></select>
+            <select id="heat-filter" hidden><option value="">Alle Sportarten</option></select>
           </div>
+          <div class="chips" data-for="heat-filter" role="group" aria-label="Sportart filtern"></div>
           <div class="heatmap-wrap">
             <div class="heatmap" id="heatmap"></div>
           </div>
@@ -156,16 +178,17 @@
     <!-- FEED -->
     <section id="view-feed" class="view" aria-labelledby="h-feed">
       <div class="page-head">
-        <h1 id="h-feed">Aktivitäten</h1>
-        <label class="sr-only" for="feed-filter">Sportart filtern</label>
-        <select id="feed-filter" class="select-sm"><option value="">Alle Sportarten</option></select>
+        <h1 class="large-title" id="h-feed">Aktivitäten</h1>
+        <button class="icon-btn round" data-goto="add" aria-label="Aktivität eintragen"><svg class="i" aria-hidden="true"><use href="#i-plus"/></svg></button>
       </div>
+      <select id="feed-filter" hidden><option value="">Alle Sportarten</option></select>
+      <div class="chips bleed" data-for="feed-filter" role="group" aria-label="Sportart filtern"></div>
       <div id="feed" class="feed"></div>
     </section>
 
     <!-- AUFZEICHNEN (GPS) -->
     <section id="view-record" class="view" aria-labelledby="h-record">
-      <h1 class="sr-only" id="h-record">Aufzeichnen</h1>
+      <h1 class="large-title" id="h-record">Aufzeichnen</h1>
       <div class="card record">
         <label class="sr-only" for="rec-type">Sportart</label>
         <select id="rec-type" class="select-sm"></select>
@@ -189,9 +212,10 @@
     <!-- KRAFT -->
     <section id="view-strength" class="view" aria-labelledby="h-strength">
       <!-- Planen -->
+      <h1 class="large-title" id="h-strength">Kraft</h1>
       <div id="st-setup">
         <div class="card">
-          <div class="card-head"><h1 id="h-strength">Krafttraining</h1><span class="muted num" id="st-plan-sum"></span></div>
+          <div class="card-head"><h2>Dein Training</h2><span class="muted num" id="st-plan-sum"></span></div>
           <div id="st-plan"></div>
           <button class="btn primary xl st-go" id="st-start"><svg class="i" aria-hidden="true"><use href="#i-play"/></svg>Training starten</button>
         </div>
@@ -333,16 +357,27 @@
         </div>
       </form>
 
-      <div class="card">
-        <h2>Daten</h2>
-        <p class="muted">Alle Daten liegen nur auf diesem Gerät. Ein Export ist dein Backup.</p>
-        <div class="form-actions">
-          <button class="btn" id="btn-export"><svg class="i" aria-hidden="true"><use href="#i-download"/></svg>Backup exportieren</button>
-          <label class="btn"><svg class="i" aria-hidden="true"><use href="#i-upload"/></svg>Backup importieren<input type="file" id="file-import" accept="application/json" hidden /></label>
-          <button class="btn" data-demo>Beispieldaten laden</button>
-          <button class="btn danger" id="btn-reset"><svg class="i" aria-hidden="true"><use href="#i-trash"/></svg>Alle Daten löschen</button>
-        </div>
+    </section>
+
+    <!-- PROFIL -->
+    <section id="view-profile" class="view" aria-labelledby="h-profile">
+      <h1 class="large-title" id="h-profile">Profil</h1>
+
+      <h2 class="group-title">App-Farbe</h2>
+      <div class="card group">
+        <div class="color-pick" id="color-pick" role="radiogroup" aria-label="App-Farbe"></div>
+        <p class="muted color-hint" id="color-hint"></p>
       </div>
+
+      <h2 class="group-title">Daten</h2>
+      <div class="card group list">
+        <p class="muted list-note">Alle Daten liegen nur auf diesem Gerät. Ein Export ist dein Backup.</p>
+        <button class="list-row" id="btn-export"><svg class="i" aria-hidden="true"><use href="#i-download"/></svg><span>Backup exportieren</span><svg class="i chev" aria-hidden="true"><use href="#i-chevron"/></svg></button>
+        <label class="list-row"><svg class="i" aria-hidden="true"><use href="#i-upload"/></svg><span>Backup importieren</span><svg class="i chev" aria-hidden="true"><use href="#i-chevron"/></svg><input type="file" id="file-import" accept="application/json" hidden /></label>
+        <button class="list-row" data-demo><svg class="i" aria-hidden="true"><use href="#i-bolt"/></svg><span>Beispieldaten laden</span><svg class="i chev" aria-hidden="true"><use href="#i-chevron"/></svg></button>
+        <button class="list-row danger" id="btn-reset"><svg class="i" aria-hidden="true"><use href="#i-trash"/></svg><span>Alle Daten löschen</span></button>
+      </div>
+      <p class="app-version muted">Pulse · Version 0.6</p>
     </section>
   </main>
 

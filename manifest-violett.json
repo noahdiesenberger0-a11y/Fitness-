@@ -1,0 +1,68 @@
+{
+  "name": "Pulse – Fitness Tracker",
+  "short_name": "Pulse",
+  "description": "Trainings tracken mit Streaks, Splits und Aktivitätskalender",
+  "lang": "de",
+  "id": "./",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f6f5f2",
+  "theme_color": "#f6f5f2",
+  "categories": [
+    "fitness",
+    "health",
+    "sports"
+  ],
+  "icons": [
+    {
+      "src": "icons/violett/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/violett/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/violett/maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Aufzeichnen",
+      "url": "./index.html#record",
+      "icons": [
+        {
+          "src": "icons/violett/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Krafttraining",
+      "url": "./index.html#strength",
+      "icons": [
+        {
+          "src": "icons/violett/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Eintragen",
+      "url": "./index.html#add",
+      "icons": [
+        {
+          "src": "icons/violett/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ]
+}

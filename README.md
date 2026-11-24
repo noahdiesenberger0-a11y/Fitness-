@@ -23,13 +23,17 @@ in dem du siehst, an welchen Tagen du trainiert hast.
 - **Statistiken**: Woche, Monat und Jahr, Aufteilung nach Sportart, Diagramm der letzten 12 Wochen
 - **Persönliche Bestleistungen**: längster Lauf, schnellster km, beste Pace ab 5 km, 10 km und Halbmarathon, längste Radtour und mehr
 - **Sportarten**: Laufen, Radfahren (km/h), Schwimmen (/100 m), Wandern, Gehen, Krafttraining, Yoga, Sonstiges
-- Export und Import als JSON, Demo-Daten zum Ausprobieren, Hell- und Dunkelmodus, für Handys optimiert
+- **Vier App-Farben** (Volt, Koralle, Ozean, Violett): im Profil wählbar, ändern Akzentfarbe und App-Icon
+- Export und Import als JSON (im Profil), Demo-Daten zum Ausprobieren, Hell- und Dunkelmodus
 
 ## Design
 
 Das Design folgt den Regeln aus zwei Design-Skills ([taste-skill](https://github.com/leonxlnx/taste-skill) und [impeccable](https://github.com/pbakaus/impeccable)), die hier von Hand angewendet wurden:
 
-- **Eine Akzentfarbe** (Orange), sonst neutrale, warme Flächen. Kontraste geprüft: Text mindestens 4,5:1
+- **Eine Akzentfarbe**, wählbar aus vier Farben, sonst neutrale, warme Flächen. Kontraste geprüft: Text mindestens 4,5:1 in Hell und Dunkel
+- **Am Handy wie eine App:** Tab-Leiste unten (Start, Aktivitäten, Aufzeichnen, Kraft, Profil), durchscheinende Leisten,
+  Großtitel, deren Titel beim Scrollen in die Kopfzeile wandert, Filter-Chips statt Auswahlfeldern, Listen wie in den
+  iOS-Einstellungen, Bottom-Sheets mit Griff zum Wegwischen, Scroll-Position pro Tab, erneutes Tippen auf den Tab scrollt nach oben
 - **Schrift:** Barlow für Text, Barlow Semi Condensed für Überschriften und Zahlen (Ziffern mit fester Breite), lokal eingebunden (`fonts/`, SIL Open Font License)
 - **Eigenes Icon-Set** mit einer Strichstärke statt Emojis
 - **Feste Skalen** für Abstände (4–64 px), Radien (8/10/16 px) und Bewegung (150 ms Hover, 90 ms Klick)
@@ -65,7 +69,13 @@ Am einfachsten geht das mit GitHub Pages:
 - **Bildschirm bleibt während der GPS-Aufzeichnung an** (Wake Lock). Browser stoppen GPS, sobald das Handy gesperrt wird.
 - **Laufende Aufzeichnung übersteht Schließen und Neuladen** und wird beim nächsten Öffnen fortgesetzt
 - Vibration bei jedem km-Split
-- App-Shortcuts (lange auf das Icon drücken): „Aufzeichnen“ und „Eintragen“
+- App-Shortcuts (lange auf das Icon drücken): „Aufzeichnen“, „Krafttraining“ und „Eintragen“
+
+### App-Icon in einer anderen Farbe
+
+Im **Profil → App-Farbe** wählen. In der App gilt die Farbe sofort. Das Icon auf dem Home-Bildschirm übernimmt
+das Handy nur beim Hinzufügen: Pulse vom Home-Bildschirm entfernen und neu hinzufügen. Die Daten bleiben erhalten,
+solange du dieselbe Adresse benutzt.
 
 ### Lokal testen
 
@@ -87,5 +97,7 @@ Alle Daten bleiben lokal im Browser bzw. in der App (`localStorage`). Mit **Expo
 | `models.js`    | Animierte Übungs-Figuren (Posen, Muskeln, Geräte) |
 | `manifest.json`| Web-App-Manifest (Name, Icons, Vollbild, Shortcuts) |
 | `sw.js`        | Service Worker für den Offline-Betrieb        |
-| `icons/`       | App-Icons                                     |
+| `icons/`       | App-Icons; `icons/<farbe>/` je Farbe          |
+| `manifest-<farbe>.json` | Manifest je App-Farbe                |
+| `tools/`       | Skripte, die Icons und Manifeste erzeugen     |
 | `fonts/`       | Schriftdateien (Barlow, SIL Open Font License) |
