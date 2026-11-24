@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>3D-Figur Test</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font); }
+    main { max-width: 720px; margin: 0 auto; padding: var(--s-5) var(--s-4) var(--s-7); }
+    h1 { font-family: var(--font-display); font-size: var(--t-h1); margin: 0 0 var(--s-1); }
+    p.lead { color: var(--muted); margin: 0 0 var(--s-4); }
+    .stage { position: relative; border: 1px solid var(--line); border-radius: var(--r-lg); overflow: hidden; background: var(--panel); }
+    #fig { display: block; width: 100%; height: min(70vh, 520px); cursor: grab; }
+    #fig:active { cursor: grabbing; }
+    .hint { position: absolute; left: var(--s-3); bottom: var(--s-3); font-size: var(--t-label); color: var(--muted); }
+    .chips { display: flex; gap: var(--s-2); flex-wrap: wrap; margin-top: var(--s-3); }
+    .chips span { font-size: var(--t-label); padding: 4px 10px; border-radius: 999px; background: var(--panel2); }
+    .chips span::before { content: ''; display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); margin-right: 6px; }
+    h2 { font-family: var(--font-display); font-size: var(--t-h2); margin: var(--s-6) 0 var(--s-2); }
+    .old { width: 100%; max-width: 260px; display: block; border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--panel); }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Kniebeuge – 3D-Test</h1>
+  <p class="lead">Eigene 3D-Figur statt der flachen Seitenansicht. Läuft im Trainings-Tempo (2 s runter, 1 s hoch).</p>
+  <div class="stage">
+    <canvas id="fig" aria-label="3D-Figur bei der Kniebeuge"></canvas>
+    <div class="hint">Ziehen zum Drehen</div>
+  </div>
+  <div class="chips"><span>Oberschenkel vorne</span><span>Gesäß</span></div>
+
+  <h2>Zum Vergleich: bisherige Figur</h2>
+  <svg class="model old" id="old" aria-hidden="true"></svg>
+</main>
+<script src="vendor/three.min.js"></script>
+<script src="models.js"></script>
+<script src="figure3d.js"></script>
+<script>
+  const fig = F3D.create(document.getElementById('fig'));
+  window.__fig = fig;
+  const old = document.getElementById('old');
+  old.setAttribute('viewBox', modelViewBox('squat'));
+  let t0 = performance.now();
+  (function loop(now) {
+    const x = ((now - t0) / 1000) % 4;
+    const pos = x < 2 ? x / 2 : x < 2.3 ? 1 : x < 3.3 ? 1 - (x - 2.3) : 0;
+    old.innerHTML = modelSvg('squat', 1 - pos);
+    requestAnimationFrame(loop);
+  })(t0);
+</script>
+</body>
+</html>
