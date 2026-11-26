@@ -604,8 +604,8 @@ function importData(file) {
 
 /* ---------------- Navigation ---------------- */
 let currentView = 'train';
-const VIEWS = ['train', 'feed', 'splits', 'discover', 'progress', 'profile', 'split-edit'];
-const VIEW_TITLES = { train: 'Training', feed: 'Feed', splits: 'Splits', discover: 'Entdecken', progress: 'Fortschritt', profile: 'Profil', 'split-edit': 'Split' };
+const VIEWS = ['train', 'feed', 'habits', 'splits', 'discover', 'progress', 'profile', 'split-edit'];
+const VIEW_TITLES = { train: 'Training', feed: 'Feed', habits: 'Habits', splits: 'Splits', discover: 'Entdecken', progress: 'Fortschritt', profile: 'Profil', 'split-edit': 'Split' };
 const PUSHED = { 'split-edit': 'splits', discover: 'splits' }; // Unterseiten: Zurück führt zu diesem Tab
 const scrollMemory = {};
 
@@ -628,7 +628,7 @@ function showView(v) {
   onScroll();
 }
 // 3D-Figuren laden asynchron: danach Vorschaubilder der aktuellen Ansicht neu zeichnen
-window.addEventListener('model3d-ready', () => renderCurrent());
+window.addEventListener('model3d-ready', () => { if (state) renderCurrent(); });
 function onScroll() { document.body.classList.toggle('scrolled', window.scrollY > 36); }
 
 /* ---------------- Filter-Chips (ersetzen Auswahlfelder) ---------------- */
@@ -700,6 +700,7 @@ function renderCurrent() {
   if (currentView === 'progress') renderProgress();
   if (currentView === 'discover') renderDiscoverView();
   if (currentView === 'profile') renderProfile();
+  if (currentView === 'habits' && typeof renderHabits === 'function') renderHabits();
 }
 
 function setMark(k, value) {

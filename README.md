@@ -40,6 +40,21 @@ Daten der früheren Lauf-Version werden beim ersten Start automatisch übernomme
 Läufe und andere Sportarten werden Cardio-Einträge, der alte Kraft-Plan wird zum Split „Mein Plan“.
 Die alten Daten bleiben zusätzlich unverändert im Browser gespeichert.
 
+## Habits
+
+Eigener Tab mit täglichen Gewohnheiten (übernommen aus dem Habit-Tracker-Branch):
+
+- **Heute-Checkliste** mit Ring: Training, Wasser (zählen), Protein, Schlaf, Dehnen, Kreatin, Schritte, eigene Gewohnheiten
+- **Training zählt als Gewohnheit**: feste Trainingstage, ein gespeichertes Training hakt den Tag ab, ein verpasster Tag kann in derselben Woche nachgeholt werden
+- **Serien pro Gewohnheit** und **perfekte Tage in Folge**; Ruhetage aus dem Kalender schützen alle Serien
+- **Wochen-Matrix**, 12-Wochen-Kalender und Quote pro Gewohnheit, **16 Erfolge**
+- Habits liegen nur auf dem Gerät (nicht in der Cloud), sind aber im Export enthalten
+
+## 3D-Figuren
+
+Im Tempo-Coach und als Vorschaubild in allen Übungslisten zeigt eine **drehbare 3D-Figur** (Three.js, Körper aus MakeHuman, CC0)
+die Übung mit farbig markierten Muskeln. Ohne WebGL erscheint weiter die 2D-Figur aus `models.js`.
+
 ## Sozial (Etappe 3)
 
 - **Benutzername:** Nach der Anmeldung wählst du deinen `@namen` (a–z, 0–9, Punkt, Unterstrich; einmalig vergeben)
@@ -159,6 +174,8 @@ Alle Daten bleiben lokal im Browser bzw. in der App (`localStorage`). Mit **Expo
 | `vendor/`      | supabase-js 2.119.0 (MIT-Lizenz), lokal für den Offline-Betrieb |
 | `coach.js`     | Vorführen und Tempo-Coach mit animierter Figur |
 | `models.js`    | Animierte Übungs-Figuren (Posen, Muskeln, Geräte) |
+| `models3d.js`  | 3D-Übungsfiguren mit Three.js (`vendor/three.module.min.js`, MIT) und MakeHuman-Körper (`assets/`, CC0) |
+| `habits.js`    | Habits: Gewohnheiten, Serien, Wochen-Matrix, Erfolge |
 | `manifest.json`| Web-App-Manifest (Name, Icons, Vollbild, Shortcuts) |
 | `sw.js`        | Service Worker für den Offline-Betrieb        |
 | `tools/`       | Skripte, die Icons und Manifeste erzeugen     |
