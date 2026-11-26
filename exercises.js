@@ -89,13 +89,8 @@ function exByName(name) {
 /** Kleines Vorschaubild: animierte Figur, sonst Icon */
 function exThumb(exId, cls = 'plan-thumb') {
   const e = exInfo(exId);
-  if (e.model && window.Model3D?.ready) {
-    return `<img class="model ${cls}" src="${Model3D.thumb(e.model)}" alt="" />`;
-  }
-  if (e.model && typeof modelSvg === 'function') {
-    return `<svg class="model ${cls}" viewBox="${modelViewBox(e.model)}" aria-hidden="true">${modelSvg(e.model, 0.5)}</svg>`;
-  }
-  return `<div class="${cls} thumb-icon">${ic('dumbbell')}</div>`;
+  const g = GROUPS[e.group] || '';
+  return `<div class="${cls} thumb-icon" title="${esc(g)}"><span>${esc(g.slice(0, 2))}</span></div>`;
 }
 
 /* ---------------- Kraft-Berechnungen ---------------- */

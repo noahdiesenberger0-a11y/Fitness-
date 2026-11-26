@@ -11,7 +11,8 @@
  *
  *  Ruhetage (state.marks[k] === 'rest') schützen alle Serien, wie bei der Trainings-Streak.
  *  Training zählt als Gewohnheit: ein gespeichertes Training hakt den Tag ab.
- *  Habits bleiben auf dem Gerät (nicht in der Cloud), sind aber im Export enthalten.
+ *  Angemeldet werden Habits mit der Cloud abgeglichen (cloud.js → syncHabits);
+ *  Follower sehen nur eine Zusammenfassung (Serien und Quoten, habitSummary).
  * ============================================================ */
 
 const ALL_DAYS = [0, 1, 2, 3, 4, 5, 6];
@@ -158,11 +159,12 @@ function setHabit(id, k, v) {
   if (h.kind === 'count') v = Math.max(0, Math.min(h.target * 3, v));
   if (!v) delete state.habitLog[k][id]; else state.habitLog[k][id] = v;
   if (!Object.keys(state.habitLog[k]).length) delete state.habitLog[k];
-  save(true);
+  save();
   if (isDone(h, k)) buzz(30);
   if (k === todayKey() && !wasPerfect && isPerfect(k)) celebrate();
   checkBadges();
   renderHabits();
+  if (currentView === 'train' && typeof renderTrain === 'function') renderTrain();
 }
 function celebrate() {
   if (state.settings.sound) {
@@ -331,12 +333,12 @@ function habitEditor(id) {
       if (!e.name) return toast('Gib der Gewohnheit einen Namen');
       if (isNew) state.habits.push(e); else Object.assign(h, e);
     }
-    save(true); closeModal(); toast(isNew ? 'Gewohnheit angelegt' : 'Gespeichert'); renderHabits();
+    save(); closeModal(); toast(isNew ? 'Gewohnheit angelegt' : 'Gespeichert'); renderHabits();
   });
   $('#he-del')?.addEventListener('click', () => {
     if (!confirm(`„${h.name}“ löschen? Der Verlauf dieser Gewohnheit geht verloren.`)) return;
     state.habits = state.habits.filter((x) => x.id !== h.id);
-    save(true); closeModal(); renderHabits();
+    save(); closeModal(); renderHabits();
   });
 }
 
@@ -375,7 +377,7 @@ function checkBadges(silent) {
   const fresh = BADGES.filter((b) => !state.badges.includes(b.id) && b.val() >= b.goal);
   if (!fresh.length) return;
   state.badges.push(...fresh.map((b) => b.id));
-  save(true);
+  save();
   if (!silent) setTimeout(() => toast(`Erfolg freigeschaltet: ${fresh[fresh.length - 1].name}`), 900);
 }
 function renderBadges() {
@@ -386,6 +388,30 @@ function renderBadges() {
       return `<div class="bdg${on ? ' on' : ''}"><span class="bdg-ic">${ic(b.icon)}</span><b>${b.name}</b><span class="muted">${b.desc}</span>
         ${on ? '' : `<div class="bar"><i style="width:${(v / b.goal) * 100}%"></i></div><span class="bdg-n num">${v} / ${b.goal}</span>`}</div>`;
     }).join('')}</div>`;
+}
+
+/* ---------------- Für Follower ---------------- */
+/** Kurze Zusammenfassung, die mit der Profil-Statistik geteilt wird */
+function habitSummary() {
+  if (!state.habits?.length) return {};
+  ensureHabits();
+  return {
+    gym: habitStreak(gymHabit()),
+    perfect: perfectStreak(),
+    perfectBest: perfectBest(),
+    list: state.habits.map((h) => ({ name: h.name, icon: h.icon, streak: habitStreak(h), rate: habitRate(h) })),
+  };
+}
+/** Zusammenfassung eines anderen Nutzers anzeigen (Profil-Sheet in social.js) */
+function habitSummaryHtml(s) {
+  const known = new Set(HABIT_ICONS);
+  return `<div class="hs-other">
+    <div class="hs-top"><span>${ic('star')}<b class="num">${s.perfect || 0}</b> perfekte Tage in Folge</span><span class="muted">Rekord ${s.perfectBest || 0}</span></div>
+    ${s.list.slice(0, 8).map((h) => `<div class="hs-row"><span class="h-ic sm">${ic(known.has(h.icon) ? h.icon : 'target')}</span>
+      <span class="h-grow">${esc(h.name)}</span>
+      <span class="h-streak">${ic('flame')}${Number(h.streak) || 0}</span>
+      <span class="muted num">${h.rate == null ? '–' : Number(h.rate) + ' %'}</span></div>`).join('')}
+  </div>`;
 }
 
 /* ---------------- Events ---------------- */
@@ -402,6 +428,6 @@ document.addEventListener('click', (e) => {
   else if (d.hminus) { const h = state.habits.find((x) => x.id === d.hminus); setHabit(h.id, d.k, (habitVal(h, d.k) || 0) - 1); }
   else if (d.hedit) habitEditor(d.hedit);
   else if (d.hnew !== undefined) addHabitSheet();
-  else if (d.hpreset) { state.habits.push(makeHabit(d.hpreset)); save(true); closeModal(); toast('Gewohnheit hinzugefügt'); renderHabits(); }
+  else if (d.hpreset) { state.habits.push(makeHabit(d.hpreset)); save(); closeModal(); toast('Gewohnheit hinzugefügt'); renderHabits(); }
   else if (d.hcustom !== undefined) habitEditor(null);
 });

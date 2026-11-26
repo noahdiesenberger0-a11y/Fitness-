@@ -153,6 +153,7 @@ async function sync() {
       if (error) throw error;
       state.sync.profileHash = hashOf(prof);
     }
+    if (await syncHabits()) pulled = true;
     await pushResults();
     await pushStats();
     if (pulled) markAllPRs();
@@ -234,6 +235,48 @@ async function pushResults() {
   }
 }
 
+/* ---------------- Habits ---------------- */
+/**
+ * Habits liegen als ein Dokument pro Nutzer in user_habits.
+ * Ist das lokale Dokument seit dem letzten Abgleich unverändert, gewinnt die Cloud.
+ * Sonst werden beide zusammengeführt: Gewohnheiten und Haken beider Seiten bleiben erhalten.
+ */
+let habitsMissing = false; // Tabelle noch nicht angelegt (habits.sql nicht ausgeführt)
+const habitsDoc = () => ({ schedule: state.schedule, habits: state.habits, habitLog: state.habitLog, badges: state.badges });
+function mergeHabits(remote, localChanged) {
+  if (!localChanged) { Object.assign(state, remote); return; }
+  const byId = new Map((remote.habits || []).map((h) => [h.id, h]));
+  for (const h of state.habits) byId.set(h.id, h);
+  state.habits = [...byId.values()];
+  const log = { ...(remote.habitLog || {}) };
+  for (const [k, v] of Object.entries(state.habitLog)) log[k] = { ...(log[k] || {}), ...v };
+  state.habitLog = log;
+  state.badges = [...new Set([...(remote.badges || []), ...state.badges])];
+}
+async function syncHabits() {
+  if (habitsMissing || typeof ensureHabits !== 'function') return false;
+  ensureHabits();
+  let pulled = false;
+  const { data: row, error } = await sb.from('user_habits').select('data').eq('user_id', user.id).maybeSingle();
+  if (error) {
+    if (error.code === '42P01' || error.code === 'PGRST205') { habitsMissing = true; return false; }
+    throw error;
+  }
+  const localChanged = hashOf(habitsDoc()) !== state.sync.habitsHash;
+  if (row?.data?.habits && hashOf(row.data) !== state.sync.habitsHash) {
+    mergeHabits(row.data, localChanged);
+    ensureHabits();
+    pulled = true;
+  }
+  const h = hashOf(habitsDoc());
+  if (!row || hashOf(row.data) !== h) {
+    const { error: e2 } = await sb.from('user_habits').upsert({ user_id: user.id, data: habitsDoc(), updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
+    if (e2) throw e2;
+  }
+  state.sync.habitsHash = h;
+  return pulled;
+}
+
 /* ---------------- Profil-Statistik für Follower ---------------- */
 /** Skips, Ruhetage (12 Monate), Streak und Rekorde – sichtbar je nach Profil-Sichtbarkeit */
 function profileStats() {
@@ -244,11 +287,13 @@ function profileStats() {
   const marks = {};
   for (const [k, v] of Object.entries(state.marks || {})) if (k >= from && (v === 'skip' || v === 'rest')) marks[k] = v;
   const s = computeStreaks();
-  return {
+  const out = {
     marks,
     records: recordSummary(8),
     streak: { current: s.current, longest: s.longest, weeks: s.weekStreak, skips: s.skips },
   };
+  if (!habitsMissing && typeof habitSummary === 'function') out.habits = habitSummary();
+  return out;
 }
 let statsMissing = false; // Tabelle noch nicht angelegt (stats.sql nicht ausgeführt)
 async function pushStats() {

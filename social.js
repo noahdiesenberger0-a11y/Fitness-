@@ -422,7 +422,7 @@ async function showUser(id) {
       sb.from('follows').select('following', { count: 'exact', head: true }).eq('follower', id),
       sb.from('workouts').select('user_id, id, date, data, updated_at').eq('user_id', id).order('date', { ascending: false }).limit(60),
       sb.from('splits').select('user_id, ref, data, published_at').eq('user_id', id).eq('is_public', true),
-      sb.from('profile_stats').select('marks, records, streak').eq('user_id', id).maybeSingle(),
+      sb.from('profile_stats').select('*').eq('user_id', id).maybeSingle(),
     ]);
     const st = stq.error ? null : stq.data; // fehlt, wenn privat oder stats.sql noch nicht ausgeführt
     if (prof.error) throw prof.error;
@@ -453,6 +453,7 @@ async function showUser(id) {
         : !user ? `<button class="btn wide primary" data-follow="${id}">Folgen</button>` : ''}
       ${list.length || st ? `<h4 class="sd-h">Aktivität</h4>${miniHeat(list.map((r) => r.date), marks)}
         <div class="mini-legend"><span><i class="cell l3"></i>Training</span><span><i class="cell rest"></i>Ruhetag</span><span><i class="cell skip"></i>Skip</span></div>` : ''}
+      ${st?.habits?.list?.length ? `<h4 class="sd-h">Habits</h4>${habitSummaryHtml(st.habits)}` : ''}
       ${st?.records?.length ? `<h4 class="sd-h">Rekorde</h4><div class="prs">${recordRows(st.records.slice(0, 5))}</div>` : ''}
       ${(sp.data || []).length ? `<h4 class="sd-h">Splits</h4>${sp.data.map((s) => `
         <button class="card split-card mini" data-dc-split="${esc(s.ref)}"><b>${esc(s.data.name)}</b>

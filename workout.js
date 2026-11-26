@@ -98,11 +98,81 @@ function renderTrain() {
       `<i class="${i < ws.length ? 'on' : ''}"></i>`).join('')}</div>
     <div><b>${ws.length} von ${goal}</b> Trainings diese Woche${ws.length ? ` · ${fmtKg(workoutVolume(ws.flatMap((w) => w.exercises)))}` : ''}</div>`;
 
+  renderHomeExtras(split);
+
   const recent = sortedEntries().slice(0, 3);
   $('#tr-feed-head').classList.toggle('hidden', !recent.length);
   $('#tr-feed').classList.toggle('hidden', !recent.length);
   $('#tr-feed').innerHTML = recent.map(entryRow).join('');
 }
+
+/* ---------------- Startseite: Begrüßung, Habits, erste Schritte, Tipp ---------------- */
+function renderHomeExtras(split) {
+  const h = new Date().getHours();
+  const hello = h < 5 ? 'Gute Nacht' : h < 11 ? 'Guten Morgen' : h < 18 ? 'Hallo' : 'Guten Abend';
+  const first = (state.profile.name || '').trim().split(' ')[0];
+  const s = computeStreaks();
+  const date = new Date().toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' });
+  $('#tr-greet').innerHTML = `<div><div class="greet-date">${esc(date)}</div>
+      <h1 class="large-title" id="h-train">${hello}${first ? ', ' + esc(first) : ''}</h1></div>
+    ${s.current ? `<span class="greet-streak" title="Streak">${ic('flame')}<b class="num">${s.current}</b></span>` : ''}`;
+
+  // Heute fällige Habits zum direkten Abhaken
+  let habitsHtml = '';
+  if (typeof ensureHabits === 'function') {
+    ensureHabits();
+    const k = todayKey();
+    const due = dueHabits(k).filter((x) => x.kind !== 'gym');
+    if (due.length) {
+      const done = due.filter((x) => isDone(x, k)).length;
+      habitsHtml = `<article class="card home-habits">
+        <div class="card-head"><h2>Heute</h2><button class="link-btn" data-view="habits">${done} von ${due.length} erledigt${ic('chevron')}</button></div>
+        <div class="h-list">${due.map((x) => habitRow(x)).join('')}</div></article>`;
+    }
+  }
+  $('#tr-habits').innerHTML = habitsHtml;
+
+  // Erste Schritte: solange noch nicht alles erledigt ist
+  const real = state.workouts.filter((w) => !w.demo);
+  const signedIn = typeof user !== 'undefined' && !!user;
+  const steps = [
+    { done: !!split, label: 'Plan auswählen', sub: 'Dein Split für die Woche', act: 'data-view="splits"' },
+    { done: real.length > 0, label: 'Erstes Training machen', sub: 'Sätze abhaken, Pausen-Timer läuft automatisch', act: split?.days?.length ? `data-start-day="${split.id}:${split.days[nextDayIndex(split)].id}"` : 'data-start-empty' },
+    { done: Object.keys(state.habitLog || {}).length > 0, label: 'Eine Gewohnheit abhaken', sub: 'Wasser, Schlaf oder Protein', act: 'data-view="habits"' },
+    { done: signedIn, label: 'Konto erstellen', sub: 'Backup in der Cloud und Freunden folgen', act: 'data-auth="signup"' },
+    { done: typeof social !== 'undefined' && social.following?.size > 0, label: 'Freunden folgen', sub: 'Gemeinsam dranbleiben, Skips sehen', act: 'data-view="feed"' },
+  ];
+  const left = steps.filter((x) => !x.done).length;
+  $('#tr-start').innerHTML = left && !state.profile.hideStart ? `<article class="card start-card">
+    <div class="card-head"><div><h2>Erste Schritte</h2><span class="muted">${steps.length - left} von ${steps.length} erledigt</span></div>
+      <button class="icon-btn ghost" data-hide-start aria-label="Ausblenden">${ic('x')}</button></div>
+    <div class="bar"><i style="width:${((steps.length - left) / steps.length) * 100}%"></i></div>
+    <div class="start-list">${steps.map((x) => `<button class="start-row${x.done ? ' done' : ''}" ${x.done ? 'disabled' : x.act}>
+      <span class="start-check">${x.done ? ic('check') : ''}</span>
+      <span class="start-body"><b>${x.label}</b><span class="muted">${x.sub}</span></span>${x.done ? '' : ic('chevron')}</button>`).join('')}</div>
+  </article>` : '';
+
+  // Tipp des Tages: eine Übung aus dem nächsten Training
+  let tipHtml = '';
+  if (typeof TIPS !== 'undefined') {
+    const day = split?.days?.length ? split.days[nextDayIndex(split)] : null;
+    const pool = (day ? day.exercises.map((e) => e.exId) : Object.keys(TIPS)).filter((id) => TIPS[id]);
+    if (pool.length) {
+      const n = Math.floor(Date.now() / 86400000);
+      const id = pool[n % pool.length];
+      const tip = TIPS[id].how[n % TIPS[id].how.length];
+      tipHtml = `<article class="card tip-card"><div class="label">Tipp des Tages · ${esc(exInfo(id).name)}</div>
+        <p>${esc(tip)}</p><button class="link-btn" data-tips="${esc(id)}">Mehr zur Technik${ic('chevron')}</button></article>`;
+    }
+  }
+  $('#tr-tip').innerHTML = tipHtml;
+}
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('[data-hide-start]')) return;
+  state.profile.hideStart = true;
+  save(true);
+  renderTrain();
+});
 
 /* ---------------- Training starten ---------------- */
 /** Satz-Zeilen vorausfüllen: Werte vom letzten Mal, mit Progressions-Tipp */
@@ -267,7 +337,6 @@ function renderLive() {
       <div class="lx-actions">
         <button class="btn sm" data-add-set="${i}">${ic('plus')}Satz</button>
         <button class="btn sm" data-tips="${esc(e.exId)}">${ic('info')}Tipps</button>
-        ${info.model ? `<button class="btn sm" data-demo-ex="${i}">${ic('play')}Vorführen</button>` : ''}
         <button class="btn sm" data-coach="${i}">${ic('timer')}Tempo-Coach</button>
       </div>
     </section>`;
@@ -488,7 +557,7 @@ function renderPickerList() {
   const q = ($('#pk-search')?.value || '').trim().toLowerCase();
   const list = allExercises().filter((e) => (!pickerGroup || e.group === pickerGroup) && (!q || e.name.toLowerCase().includes(q)));
   $('#pk-list').innerHTML = list.map((e) => `<div class="pk-row"><button class="pk-item" data-pick="${e.id}">
-      ${exThumb(e.id, 'mini-thumb')}<span><b>${esc(e.name)}</b><small class="muted">${GROUPS[e.group]}${e.model ? '' : ' · ohne Animation'}</small></span></button>
+      ${exThumb(e.id, 'mini-thumb')}<span><b>${esc(e.name)}</b><small class="muted">${GROUPS[e.group]}</small></span></button>
       ${TIPS[e.id] ? `<button class="icon-btn ghost" data-tips="${e.id}" aria-label="Tipps zu ${esc(e.name)}">${ic('info')}</button>` : ''}</div>`).join('')
     || '<p class="muted">Nichts gefunden. Leg die Übung unten selbst an.</p>';
 }

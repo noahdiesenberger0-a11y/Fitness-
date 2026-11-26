@@ -20,9 +20,7 @@ und sehen, wie du stärker wirst. Mit Streaks und einem Aktivitätskalender wie 
   - Übungen hinzufügen, tauschen, verschieben; eigene Übungen anlegen
   - Das laufende Training übersteht Schließen und Neuladen der App
   - Freies Training ohne Split, „Nochmal machen“ für ein altes Training
-- **Animierte Figuren** (selbst gebaut, `models.js`)
-  - **Vorführen**: Die Figur zeigt die Übung im eingestellten Tempo, mit markierten Muskeln
-  - **Tempo-Coach**: führt durch einen Satz (z. B. 3 s runter, 1 s hoch), zählt laut mit und trägt die Wiederholungen ein
+- **Tempo-Coach**: führt durch einen Satz (z. B. 3 s runter, 1 s hoch), ein Kreis wächst und schrumpft im Takt, zählt laut mit und trägt die Wiederholungen ein
 - **Fortschritt**
   - Kurve pro Übung: geschätztes 1RM, schwerster Satz oder Volumen, mit Fortschritt in **Prozent** seit Beginn
   - Sätze pro Muskelgruppe in dieser Woche (Richtwert 10–20) im Vergleich zu den Wochen davor
@@ -40,6 +38,17 @@ Daten der früheren Lauf-Version werden beim ersten Start automatisch übernomme
 Läufe und andere Sportarten werden Cardio-Einträge, der alte Kraft-Plan wird zum Split „Mein Plan“.
 Die alten Daten bleiben zusätzlich unverändert im Browser gespeichert.
 
+## Einrichtung beim ersten Start
+
+Beim ersten Öffnen führt Pulse in acht kurzen Schritten durch die Einrichtung: Name, Ziel, Erfahrung,
+Trainingstage, passender Plan (wird anhand von Tagen und Erfahrung empfohlen), Gewohnheiten und
+Sichtbarkeit. Danach kann man das erste Training direkt starten. Wer nur schauen will, lädt Beispieldaten.
+In den Einstellungen lässt sich die Einrichtung erneut starten.
+
+Die Startseite begrüßt mit Namen und Streak, zeigt das nächste Training, die heute fälligen Habits zum
+Abhaken, eine Liste „Erste Schritte“ (Plan, erstes Training, Habit, Konto, Freunden folgen) und einen
+Technik-Tipp des Tages.
+
 ## Habits
 
 Eigener Tab mit täglichen Gewohnheiten (übernommen aus dem Habit-Tracker-Branch):
@@ -48,12 +57,8 @@ Eigener Tab mit täglichen Gewohnheiten (übernommen aus dem Habit-Tracker-Branc
 - **Training zählt als Gewohnheit**: feste Trainingstage, ein gespeichertes Training hakt den Tag ab, ein verpasster Tag kann in derselben Woche nachgeholt werden
 - **Serien pro Gewohnheit** und **perfekte Tage in Folge**; Ruhetage aus dem Kalender schützen alle Serien
 - **Wochen-Matrix**, 12-Wochen-Kalender und Quote pro Gewohnheit, **16 Erfolge**
-- Habits liegen nur auf dem Gerät (nicht in der Cloud), sind aber im Export enthalten
+- Mit Konto werden Habits in der Cloud gesichert (`supabase/habits.sql`), Follower sehen Serien und Quoten im Profil
 
-## 3D-Figuren
-
-Im Tempo-Coach und als Vorschaubild in allen Übungslisten zeigt eine **drehbare 3D-Figur** (Three.js, Körper aus MakeHuman, CC0)
-die Übung mit farbig markierten Muskeln. Ohne WebGL erscheint weiter die 2D-Figur aus `models.js`.
 
 ## Sozial (Etappe 3)
 
@@ -87,7 +92,8 @@ pro Split erscheinen unter **Entdecken**. Beispieldaten werden nie hochgeladen.
 1. Im Supabase-Dashboard: **SQL Editor → New query**, den Inhalt von [`supabase/schema.sql`](supabase/schema.sql) einfügen und **Run**.
    Das legt die Tabellen und die Zugriffsregeln an (Row Level Security: jeder ändert nur seine eigenen Daten).
    Danach genauso [`supabase/social.sql`](supabase/social.sql) für Benutzernamen, Kudos, Kommentare und Benachrichtigungen
-   und [`supabase/stats.sql`](supabase/stats.sql), damit Follower Skips, Ruhetage, Streak und Rekorde sehen.
+   und [`supabase/stats.sql`](supabase/stats.sql), damit Follower Skips, Ruhetage, Streak und Rekorde sehen,
+   und zuletzt [`supabase/habits.sql`](supabase/habits.sql) für Habits in der Cloud und die Habit-Serien im Profil.
 2. **Authentication → URL Configuration**: als **Site URL** die Adresse der App eintragen
    (z. B. `https://<github-name>.github.io/Fitness-/`) und dieselbe Adresse unter **Redirect URLs** hinzufügen.
    Sonst führen die Links in der Bestätigungs-Mail ins Leere.
@@ -172,10 +178,10 @@ Alle Daten bleiben lokal im Browser bzw. in der App (`localStorage`). Mit **Expo
 | `cloud.js`     | Konto, Sync mit Supabase, Splits teilen, Entdecken |
 | `supabase/schema.sql` | Datenbank: Tabellen und Zugriffsregeln |
 | `vendor/`      | supabase-js 2.119.0 (MIT-Lizenz), lokal für den Offline-Betrieb |
-| `coach.js`     | Vorführen und Tempo-Coach mit animierter Figur |
-| `models.js`    | Animierte Übungs-Figuren (Posen, Muskeln, Geräte) |
-| `models3d.js`  | 3D-Übungsfiguren mit Three.js (`vendor/three.module.min.js`, MIT) und MakeHuman-Körper (`assets/`, CC0) |
+| `coach.js`     | Tempo-Coach: führt im Takt durch einen Satz und zählt mit |
 | `habits.js`    | Habits: Gewohnheiten, Serien, Wochen-Matrix, Erfolge |
+| `onboarding.js`| Einrichtung beim ersten Start                  |
+| `tests/`       | Rauchtest im Browser (`npm install`, dann `npm test`), läuft auch auf GitHub |
 | `manifest.json`| Web-App-Manifest (Name, Icons, Vollbild, Shortcuts) |
 | `sw.js`        | Service Worker für den Offline-Betrieb        |
 | `tools/`       | Skripte, die Icons und Manifeste erzeugen     |

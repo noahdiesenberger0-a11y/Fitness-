@@ -1,8 +1,8 @@
 /* Service Worker: macht Pulse offline nutzbar. Bei Änderungen VERSION erhöhen. */
-const VERSION = 'pulse-v18';
+const VERSION = 'pulse-v20';
 const ASSETS = [
-  './', './index.html', './styles.css', './app.js', './models.js', './exercises.js', './coach.js',
-  './workout.js', './splits.js', './progress.js', './cloud.js', './social.js', './tips.js', './habits.js', './models3d.js', './vendor/three.module.min.js', './assets/human.json', './assets/human.bin', './vendor/supabase-2.119.0.js', './vendor/qrcode-generator-1.4.4.js', './manifest.json',
+  './', './index.html', './styles.css', './app.js', './exercises.js', './coach.js',
+  './workout.js', './splits.js', './progress.js', './cloud.js', './social.js', './tips.js', './habits.js', './onboarding.js', './vendor/supabase-2.119.0.js', './vendor/qrcode-generator-1.4.4.js', './manifest.json',
   './manifest-blau.json', './manifest-hellblau.json', './manifest-rot.json',
   ...['blau', 'hellblau', 'rot'].flatMap((c) => ['icon-192.png', 'apple-touch-icon.png', 'favicon-32.png'].map((f) => `./icons/${c}/${f}`)),
   './icons/icon-192.png', './icons/icon-512.png', './icons/maskable-512.png',

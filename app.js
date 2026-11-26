@@ -606,7 +606,7 @@ function importData(file) {
 let currentView = 'train';
 const VIEWS = ['train', 'feed', 'habits', 'splits', 'discover', 'progress', 'profile', 'split-edit'];
 const VIEW_TITLES = { train: 'Training', feed: 'Feed', habits: 'Habits', splits: 'Splits', discover: 'Entdecken', progress: 'Fortschritt', profile: 'Profil', 'split-edit': 'Split' };
-const PUSHED = { 'split-edit': 'splits', discover: 'splits' }; // Unterseiten: Zurück führt zu diesem Tab
+const PUSHED = { 'split-edit': 'splits', discover: 'splits', progress: 'profile' }; // Unterseiten: Zurück führt zu diesem Tab
 const scrollMemory = {};
 
 function showView(v) {
@@ -627,8 +627,6 @@ function showView(v) {
   if (!same) window.scrollTo(0, PUSHED[v] ? 0 : scrollMemory[v] || 0);
   onScroll();
 }
-// 3D-Figuren laden asynchron: danach Vorschaubilder der aktuellen Ansicht neu zeichnen
-window.addEventListener('model3d-ready', () => { if (state) renderCurrent(); });
 function onScroll() { document.body.classList.toggle('scrolled', window.scrollY > 36); }
 
 /* ---------------- Filter-Chips (ersetzen Auswahlfelder) ---------------- */
@@ -777,6 +775,7 @@ function init() {
     state = blankState();
     if (online) state.sync = sync; // so werden die Löschungen in die Cloud übertragen
     save(); toast('Alle Daten gelöscht'); showView('train');
+    if (typeof showOnboarding === 'function') showOnboarding();
   });
   initWorkout();
   initSplits();
@@ -791,6 +790,8 @@ function init() {
   const hashView = location.hash.slice(1);
   showView(VIEWS.includes(hashView) && hashView !== 'split-edit' ? hashView : 'train');
   restoreWorkout();
+  if (typeof needsOnboarding === 'function' && needsOnboarding()) showOnboarding();
+  $('#btn-onboard').addEventListener('click', () => showOnboarding(true));
   setupInstall();
   if ('serviceWorker' in navigator && location.protocol !== 'file:') {
     navigator.serviceWorker.register('sw.js').catch(() => {});
