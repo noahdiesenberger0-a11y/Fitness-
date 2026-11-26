@@ -564,8 +564,8 @@ function initSettings() {
   $('#btn-export').addEventListener('click', exportData);
   $('#file-import').addEventListener('change', (e) => e.target.files[0] && importData(e.target.files[0]));
   $('#btn-onboard').addEventListener('click', showOnboarding);
-  $('#btn-reset').addEventListener('click', () => {
-    if (!confirm('Wirklich ALLE Daten löschen? Das kann nicht rückgängig gemacht werden.')) return;
+  $('#btn-reset').addEventListener('click', async () => {
+    if (!await ask('Wirklich ALLE Daten löschen? Das kann nicht rückgängig gemacht werden.', 'Alles löschen')) return;
     db = defaultDb(); saveDb(); toast('Alle Daten gelöscht'); showOnboarding();
   });
 }
@@ -665,8 +665,8 @@ function finishOnboarding(silent) {
 const DEMO_BASE = { bench: 50, incline: 40, db_bench: 20, squat: 60, deadlift: 80, row: 45, db_row: 22, ohp: 30, db_ohp: 14, lateral: 7,
   facepull: 15, triceps: 20, latpull: 45, cable_row: 45, curl: 12, hammer: 12, legpress: 100, rdl: 60, legcurl: 35, legext: 35, calf: 40,
   lunge: 14, hipthrust: 60, flys: 35, skull: 20 };
-function loadDemo(skipConfirm) {
-  if (!skipConfirm && db.workouts.length && !confirm('Beispieldaten zu deinen bestehenden Daten hinzufügen?')) return;
+async function loadDemo(skipConfirm) {
+  if (!skipConfirm && db.workouts.length && !await ask('Beispieldaten zu deinen bestehenden Daten hinzufügen?', 'Hinzufügen', false)) return;
   if (!db.routines.length) db.routines = SPLITS[3].plans.map((k) => routineFromTemplate(k, 'muscle'));
   const cur = { ...DEMO_BASE };
   const rnd = (a, b) => a + Math.random() * (b - a);
@@ -733,9 +733,19 @@ function openModal(html) {
   $('#modal').classList.remove('hidden');
   box.scrollTop = 0;
 }
+/** Eigene Rückfrage statt confirm() – funktioniert überall, auch eingebettet */
+function ask(text, ok = 'Ja', danger = true) {
+  return new Promise((resolve) => {
+    openModal(`<h3>${esc(text)}</h3>
+      <div class="modal-actions"><button class="btn ${danger ? 'danger-fill' : 'primary'} grow" id="ask-ok">${esc(ok)}</button>
+      <button class="btn grow" id="ask-no">Abbrechen</button></div>`);
+    $('#ask-ok').onclick = () => { closeModal(); resolve(true); };
+    $('#ask-no').onclick = () => { closeModal(); resolve(false); };
+  });
+}
 function closeModal() { $('#modal').classList.add('hidden'); $('#modal-box').innerHTML = ''; }
 
-document.addEventListener('click', (e) => {
+document.addEventListener('click', async (e) => {
   if (e.target.id === 'modal') return closeModal();
   if (e.target.closest('[data-demo]')) { closeModal(); return loadDemo(); }
   const el = e.target.closest('[data-view],[data-start],[data-free],[data-choose],[data-day],[data-wid],[data-close],[data-ex],[data-library],[data-log-past],[data-log-date],[data-new-routine],[data-edit-routine],[data-tpl],[data-again],[data-asplan],[data-delw]');
@@ -762,7 +772,7 @@ document.addEventListener('click', (e) => {
       weight: Math.max(...x.sets.map((s) => s.weight || 0)), rest: x.rest || db.settings.rest, tempo: x.tempo || '3-1-1-0' })) });
     saveDb(); closeModal(); toast('Als Plan gespeichert'); showView('plans');
   } else if (d.delw) {
-    if (!confirm('Dieses Training wirklich löschen?')) return;
+    if (!await ask('Dieses Training wirklich löschen?', 'Löschen')) return;
     db.workouts = db.workouts.filter((w) => w.id !== d.delw);
     saveDb(); closeModal(); showView(currentView);
   }

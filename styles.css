@@ -701,3 +701,4 @@ body.resting .toast { bottom: 110px; }
 .grid2 > * { min-width: 0; }
 .weekchart .wk span { overflow: hidden; max-width: 100%; text-overflow: clip; }
 @media (max-width: 640px) { .weekchart .wk span:last-child { font-size: 9px; } .weekchart { gap: 3px; } }
+.btn.danger-fill { background: var(--danger); color: var(--panel); }

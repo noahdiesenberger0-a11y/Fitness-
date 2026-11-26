@@ -171,8 +171,8 @@ function animLoop(ts) {
  *  Laufendes Training
  *  db.active = { id, routineId, title, start, date, ex: [{ exId, name, rest, tempo, sets: [{ weight, reps, target, done }] }], rest }
  * ================================================================ */
-function startWorkout(routineId, opts = {}) {
-  if (db.active && !confirm('Es läuft bereits ein Training. Verwerfen und neu starten?')) return showView('workout');
+async function startWorkout(routineId, opts = {}) {
+  if (db.active && !await ask('Es läuft bereits ein Training. Verwerfen und neu starten?', 'Neu starten')) return showView('workout');
   const r = db.routines.find((x) => x.id === routineId);
   let ex = [];
   if (r) {
@@ -337,24 +337,24 @@ function exerciseMenu(xi) {
   $('#xm-tempo').addEventListener('change', (ev) => {
     if (parseTempo(ev.target.value)) { e.tempo = ev.target.value.trim(); saveDb(); } else toast('Tempo bitte so angeben: 3-1-1-0');
   });
-  $('#modal-box').onclick = (ev) => {
+  $('#modal-box').onclick = async (ev) => {
     const b = ev.target.closest('[data-xm]');
     if (!b) return;
     const a = b.dataset.xm;
     if (a === 'info') return showExercise(e.exId);
     if (a === 'up') [db.active.ex[xi - 1], db.active.ex[xi]] = [db.active.ex[xi], db.active.ex[xi - 1]];
     if (a === 'delset') e.sets.pop();
-    if (a === 'del') { if (!confirm('Übung aus diesem Training entfernen?')) return; db.active.ex.splice(xi, 1); }
+    if (a === 'del') { if (!await ask('Übung aus diesem Training entfernen?', 'Entfernen')) return; db.active.ex.splice(xi, 1); }
     saveDb(); closeModal(); renderWorkout();
   };
 }
 
 /* ---------------- Training abschließen ---------------- */
-function finishWorkoutSheet() {
+async function finishWorkoutSheet() {
   const w = db.active;
   const { done } = workoutCounts();
   if (!done) {
-    if (confirm('Noch kein Satz abgehakt. Training verwerfen?')) discardWorkout();
+    if (await ask('Noch kein Satz abgehakt. Training verwerfen?', 'Verwerfen')) discardWorkout();
     return;
   }
   const exs = doneExercises(w);
@@ -805,7 +805,7 @@ function initWorkout() {
   $('#wk-title').addEventListener('input', (ev) => { db.active.title = ev.target.value; saveDb(); });
   $('#wk-add').addEventListener('click', () => openPicker((id) => addExerciseToWorkout(id)));
   $('#wk-finish').addEventListener('click', finishWorkoutSheet);
-  $('#wk-cancel').addEventListener('click', () => { if (confirm('Training abbrechen? Nichts wird gespeichert.')) discardWorkout(); });
+  $('#wk-cancel').addEventListener('click', async () => { if (await ask('Training abbrechen? Nichts wird gespeichert.', 'Abbrechen und verwerfen')) discardWorkout(); });
   $('#restbar').addEventListener('click', (ev) => { const b = ev.target.closest('[data-rest]'); if (b) restAdjust(b.dataset.rest); });
 
   $('#co-close').addEventListener('click', coachClose);
@@ -842,8 +842,8 @@ function initWorkout() {
     e[f] = f === 'weight' ? Math.max(0, v) : Math.max(f === 'rest' ? 15 : 1, Math.round(v) || 1);
   });
   $('#rt-save').addEventListener('click', saveRoutine);
-  $('#rt-delete').addEventListener('click', () => {
-    if (!confirm('Diesen Plan löschen? Deine gespeicherten Trainings bleiben erhalten.')) return;
+  $('#rt-delete').addEventListener('click', async () => {
+    if (!await ask('Diesen Plan löschen? Deine gespeicherten Trainings bleiben erhalten.', 'Plan löschen')) return;
     db.routines = db.routines.filter((r) => r.id !== editRoutine.id);
     saveDb();
     showView('plans');
