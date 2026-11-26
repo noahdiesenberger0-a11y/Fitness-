@@ -1,0 +1,58 @@
+{
+  "name": "Pulse – Krafttraining",
+  "short_name": "Pulse",
+  "description": "Krafttraining tracken: Splits bauen, Sätze abhaken, Fortschritt sehen",
+  "lang": "de",
+  "id": "./",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#070b1f",
+  "theme_color": "#070b1f",
+  "categories": [
+    "fitness",
+    "health",
+    "sports"
+  ],
+  "icons": [
+    {
+      "src": "icons/blau/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/blau/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/blau/maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Training",
+      "url": "./index.html#train",
+      "icons": [
+        {
+          "src": "icons/blau/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Fortschritt",
+      "url": "./index.html#progress",
+      "icons": [
+        {
+          "src": "icons/blau/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ]
+}
