@@ -1,14 +1,25 @@
-# Pulse Gym – Trainings-App fürs Fitnessstudio
+# Pulse Gym – Gym-Habit-Tracker
 
-Pulse ist jetzt eine reine **Gym-App**. Laufen, Radfahren und GPS sind rausgeflogen – dafür ist alles rund ums Krafttraining
-deutlich ausgebaut und die App führt dich Schritt für Schritt.
+Pulse ist ein **Habit-Tracker fürs Gym**: feste Trainingstage, kleine tägliche Gewohnheiten (Wasser, Protein, Schlaf …)
+und Serien, die dich dranbleiben lassen – plus ein vollwertiges Trainings-Log mit Plänen, Pausen-Timer und Fortschritt.
+
+## Habit-Tracker
+
+- **Heute-Checkliste**: Alle heute fälligen Gewohnheiten mit Fortschrittsring. Abhaken mit einem Tipp, Zähl-Gewohnheiten (z. B. 8 Gläser Wasser) mit +/−
+- **Training als Gewohnheit**: An deinen Trainingstagen fällig, wird durch ein gespeichertes Training automatisch abgehakt. Verpasst? Trainierst du in derselben Woche an einem freien Tag, gilt es als **nachgeholt**
+- **Serien** pro Gewohnheit, „Trainings in Folge“ und **perfekte Tage** in Folge, jeweils mit Rekord
+- **Wochen-Matrix** auf der Startseite (Gewohnheit × Tag), vergangene Tage direkt nachtragen
+- **Pausetage** (krank, Urlaub): nichts ist fällig, alle Serien bleiben geschützt
+- **Gewohnheiten-Seite** mit 12-Wochen-Kalender, Serie, Rekord und 30-Tage-Quote je Gewohnheit; Vorlagen oder eigene Gewohnheiten mit Symbol, Art und Wochentagen
+- **16 Erfolge** (z. B. „Perfekte Woche“, „100 Tonnen“, „Unaufhaltsam“) mit Fortschrittsbalken
 
 ## Aufbau
 
 | Bereich | Was du dort machst |
 |---|---|
-| **Einrichtung** (erster Start) | Name, Ziel (Muskelaufbau / Maximalkraft / Fit & straff) und Trainingstage wählen → fertiger Plan |
-| **Heute** | Nächstes Training mit allen Übungen und Gewichten, großer Start-Button, Wochenziel, Monatsbilanz, letztes Training |
+| **Einrichtung** (erster Start) | Name, Ziel, Trainingstage (Mo–So) und Gewohnheiten wählen → fertiger Plan |
+| **Heute** | Checkliste mit Ring, Serien, Wochen-Matrix, nächstes Training, Monatsbilanz |
+| **Habits** | Alle Gewohnheiten mit Kalender und Statistik, Erfolge |
 | **Pläne** | Eigene Pläne anlegen/bearbeiten, 9 Vorlagen (Ganzkörper, Push/Pull/Beine, Ober-/Unterkörper) |
 | **Training** | Sätze loggen (kg, Wdh., Haken), Werte vom letzten Mal, automatischer Pausen-Timer, Tempo-Coach, Scheibenrechner |
 | **Verlauf** | Alle Trainings nach Monat, Details, „Nochmal machen“, „Als Plan speichern“, Nachtragen |
@@ -25,7 +36,7 @@ deutlich ausgebaut und die App führt dich Schritt für Schritt.
 - **Bestleistungen live**: Meldung direkt beim Abhaken, Übersicht nach dem Training
 - **Scheibenrechner** für Langhantelübungen (Stange 20/15/10 kg)
 - **30 Übungen** mit Muskelgruppen, eigene Übungen anlegbar, Entwicklung des geschätzten 1RM pro Übung
-- **Wochenziel & Serie** (Wochen in Folge mit erreichtem Ziel), Sätze pro Muskelgruppe mit Richtwert 10–20
+- Sätze pro Muskelgruppe mit Richtwert 10–20
 - **Körpergewicht** mit Verlauf
 - Laufendes Training übersteht Schließen/Neuladen, Backup Export/Import, Beispieldaten, Hell-/Dunkelmodus
 - Alte Krafttrainings aus der vorherigen Pulse-Version werden automatisch übernommen
@@ -88,6 +99,7 @@ Alle Daten bleiben lokal im Browser bzw. in der App (`localStorage`). Mit **Expo
 | `styles.css`   | Design (dunkel/hell, mobil)                   |
 | `app.js`       | Daten, Heute, Verlauf, Fortschritt, Einstellungen, Einrichtung |
 | `workout.js`   | Übungen, Pläne, laufendes Training, Pausen-Timer, Tempo-Coach |
+| `habits.js`    | Gewohnheiten, Serien, Wochen-Matrix, Pausetage, Erfolge |
 | `models.js`    | Animierte Übungs-Figuren (Posen, Muskeln, Geräte) |
 | `manifest.json`| Web-App-Manifest (Name, Icons, Vollbild, Shortcuts) |
 | `sw.js`        | Service Worker für den Offline-Betrieb        |

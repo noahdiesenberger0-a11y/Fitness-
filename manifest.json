@@ -1,7 +1,7 @@
 {
-  "name": "Pulse Gym – Trainings-App",
+  "name": "Pulse Gym – Habit-Tracker",
   "short_name": "Pulse Gym",
-  "description": "Gym-Training: Pläne, Sätze loggen, Pausen-Timer, Tempo-Coach und Fortschritt",
+  "description": "Gym-Habit-Tracker: Trainingstage, tägliche Gewohnheiten, Serien und Trainings-Log",
   "lang": "de",
   "id": "./",
   "start_url": "./index.html",

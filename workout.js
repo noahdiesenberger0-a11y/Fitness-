@@ -423,7 +423,8 @@ function saveWorkout({ date, mins, feel, notes, upd, prs }) {
   saveDb();
   restStop();
   closeModal();
-  toast('Training gespeichert');
+  toast(`Training gespeichert – ${habitStreak(gymHabit())} in Folge`);
+  checkBadges();
   showView('home');
   showWorkoutDetail(w.id);
 }

@@ -59,6 +59,7 @@ function defaultDb() {
     profile: { name: '', goal: 'muscle', days: 3, onboarded: false },
     settings: { sound: true, voice: true, vibrate: true, weekGoal: 3, rest: 90, bar: 20 },
     routines: [], workouts: [], custom: [], body: [], active: null,
+    schedule: [0, 2, 4], habits: [], log: {}, freeze: {}, badges: [],
   };
 }
 let db = null; // wird in init() geladen, wenn auch workout.js (Übungskatalog) bereit ist
@@ -134,21 +135,6 @@ function weekCounts() {
   for (const w of db.workouts) { const k = ymd(mondayOf(parseYmd(w.date))); m[k] = (m[k] || 0) + 1; }
   return m;
 }
-/** Wochen in Folge, in denen das Wochenziel erreicht wurde. Die laufende Woche bricht die Serie noch nicht. */
-function weekStreak() {
-  const c = weekCounts(), goal = db.settings.weekGoal;
-  let w = mondayOf(today()), n = 0;
-  if ((c[ymd(w)] || 0) >= goal) n++;
-  w = addDays(w, -7);
-  while ((c[ymd(w)] || 0) >= goal) { n++; w = addDays(w, -7); }
-  let longest = 0, run = 0;
-  const keys = Object.keys(c).sort();
-  if (keys.length) for (let x = parseYmd(keys[0]); x <= today(); x = addDays(x, 7)) {
-    if ((c[ymd(x)] || 0) >= goal) { run++; longest = Math.max(longest, run); } else if (ymd(x) !== ymd(mondayOf(today()))) run = 0;
-  }
-  return { current: n, longest };
-}
-
 /* ---------------- Ton, Sprache, Vibration ---------------- */
 let audioCtx = null;
 function ensureAudio() {
@@ -212,87 +198,65 @@ function renderHome() {
       <div class="bar big"><i style="width:${all ? (done / all) * 100 : 0}%"></i></div>
       <button class="btn primary xl wide" data-view="workout">${ic('play')}Weiter trainieren</button>
     </article>`);
-  } else {
+  }
+  parts.push(todayCard());
+  parts.push(streakCard());
+  parts.push(weekMatrix());
+
+  if (!db.active) {
     const r = nextRoutine();
     if (r) {
+      const nd = nextGymDay();
+      const isToday = nd === ymd(today());
+      const when = !nd ? '' : isToday ? 'heute' : nd === ymd(addDays(today(), 1)) ? 'morgen' : parseYmd(nd).toLocaleDateString('de-DE', { weekday: 'long' });
       const ups = r.ex.filter((e) => suggestFor(e.exId, e.reps)?.up).length;
-      parts.push(`<article class="card hero">
-        <div class="label">Nächstes Training</div>
-        <h2 class="hero-title">${esc(r.name)}</h2>
-        <div class="muted">${r.ex.length} Übungen · ca. ${routineMinutes(r)} min · ${routineGroups(r).join(', ')}</div>
+      parts.push(`<article class="card next-card">
+        <div class="card-head"><div><div class="label">Nächstes Training${when ? ' · ' + when : ''}</div><h2 class="next-title">${esc(r.name)}</h2></div>
+          <span class="muted">ca. ${routineMinutes(r)} min</span></div>
         <ol class="hero-ex">${r.ex.map((e) => {
           const sug = suggestFor(e.exId, e.reps);
           const w = sug ? sug.weight : e.weight;
           return `<li>${exThumb(e.exId)}<span class="grow">${esc(exName(e.exId))}</span>
             <span class="num hero-sets">${e.sets} × ${sug?.reps || e.reps}${w ? ` · ${fmtW(w)} kg` : ''}${sug?.up ? ic('trend', 'up') : ''}</span></li>`;
         }).join('')}</ol>
-        ${ups ? `<p class="hero-note">${ic('trend')}Bei ${ups} ${ups === 1 ? 'Übung' : 'Übungen'} darfst du heute steigern – die Gewichte sind schon eingetragen.</p>` : ''}
-        <button class="btn primary xl wide" data-start="${r.id}">${ic('play')}Training starten</button>
-        <div class="hero-alt">
-          ${db.routines.length > 1 ? `<button class="link-btn" data-choose>Anderen Plan wählen</button>` : ''}
-          <button class="link-btn" data-free>Freies Training ohne Plan</button>
+        ${ups ? `<p class="hero-note">${ic('trend')}Bei ${ups} ${ups === 1 ? 'Übung' : 'Übungen'} darfst du steigern – die Gewichte sind schon eingetragen.</p>` : ''}
+        <div class="next-actions">
+          <button class="btn ${isToday ? 'primary' : ''} grow" data-start="${r.id}">${ic('play')}${isToday ? 'Training starten' : 'Jetzt schon starten'}</button>
+          ${db.routines.length > 1 ? `<button class="btn" data-choose>Anderer Plan</button>` : ''}
         </div>
       </article>`);
     } else {
-      parts.push(`<article class="card hero">
-        <div class="label">Los geht's</div>
-        <h2 class="hero-title">Leg deinen ersten Trainingsplan an</h2>
+      parts.push(`<article class="card">
+        <h2>Noch kein Trainingsplan</h2>
         <p class="muted">Nimm eine fertige Vorlage oder stell dir deine Übungen selbst zusammen.</p>
-        <button class="btn primary xl wide" data-view="plans">${ic('plans')}Plan auswählen</button>
-        <div class="hero-alt"><button class="link-btn" data-free>Freies Training ohne Plan</button></div>
+        <div class="form-actions"><button class="btn primary" data-view="plans">${ic('plans')}Plan auswählen</button><button class="btn" data-free>Freies Training</button></div>
       </article>`);
     }
   }
-
-  // Woche
-  const mon = mondayOf(today());
-  const days = [...Array(7)].map((_, i) => addDays(mon, i));
-  const byDay = new Set(db.workouts.map((w) => w.date));
-  const n = db.workouts.filter((w) => w.date >= ymd(mon)).length;
-  const goal = db.settings.weekGoal;
-  const st = weekStreak();
-  const msg = n >= goal ? 'Wochenziel erreicht! Alles Weitere ist Bonus.'
-    : `Noch ${goal - n} ${goal - n === 1 ? 'Training' : 'Trainings'} bis zum Wochenziel${st.current ? ' – so hältst du deine Serie' : ''}.`;
-  parts.push(`<article class="card week">
-    <div class="card-head"><h2>Diese Woche</h2>
-      <span class="streak-pill${st.current ? ' on' : ''}">${ic('flame')}${st.current} ${st.current === 1 ? 'Woche' : 'Wochen'} in Folge</span></div>
-    <div class="week-days">${days.map((d, i) => {
-      const k = ymd(d), did = byDay.has(k), isT = k === ymd(today());
-      return `<button class="wd${did ? ' done' : ''}${isT ? ' today' : ''}${d > today() ? ' future' : ''}" data-day="${k}" aria-label="${fmtDate(k)}${did ? ': trainiert' : ''}">
-        <span>${WD[i]}</span><i>${did ? ic('check') : d.getDate()}</i></button>`;
-    }).join('')}</div>
-    <div class="goal-line"><div class="bar"><i style="width:${Math.min(100, (n / goal) * 100)}%"></i></div><span class="num"><b>${n}</b> / ${goal}</span></div>
-    <p class="muted">${msg}</p>
-  </article>`);
 
   const list = sortedWorkouts();
   if (!list.length) {
     parts.push(`<article class="card how">
       <h2>So funktioniert Pulse Gym</h2>
       <ol class="steps">
-        <li><b>Training starten</b><span>Dein Plan ist oben schon bereit. Ein Tipp auf „Training starten“ genügt.</span></li>
-        <li><b>Sätze abhaken</b><span>Gewicht und Wiederholungen eintragen, Haken setzen – die Satzpause läuft automatisch.</span></li>
-        <li><b>Stärker werden</b><span>Schaffst du alle Wiederholungen, schlägt dir die App beim nächsten Mal mehr Gewicht vor.</span></li>
+        <li><b>Jeden Tag abhaken</b><span>Oben stehen deine Gewohnheiten für heute. Ein Tipp genügt – Wasser zählst du Glas für Glas.</span></li>
+        <li><b>An Trainingstagen ins Gym</b><span>„Starten“ öffnet deinen Plan. Sätze abhaken, die Pause läuft automatisch, das Training hakt sich selbst ab.</span></li>
+        <li><b>Serien aufbauen</b><span>Jeder erledigte Tag verlängert deine Serie. Krank oder im Urlaub? Tipp auf den Tag und trag einen Pausetag ein.</span></li>
       </ol>
       <button class="btn" data-demo>Erst mal mit Beispieldaten umschauen</button>
     </article>`);
   } else {
-    // Monat im Vergleich
     const t = today();
     const mStart = ymd(new Date(t.getFullYear(), t.getMonth(), 1));
-    const pStart = ymd(new Date(t.getFullYear(), t.getMonth() - 1, 1));
-    const pEnd = ymd(addDays(new Date(t.getFullYear(), t.getMonth() - 1, 1), t.getDate()));
     const cur = db.workouts.filter((w) => w.date >= mStart);
-    const prevSame = db.workouts.filter((w) => w.date >= pStart && w.date < pEnd);
-    const vol = sum(cur, workoutVolume), pvol = sum(prevSame, workoutVolume);
     const last = list[0];
     parts.push(`<div class="grid2">
       <article class="card">
-        <div class="card-head"><h2>${MONTHS_LONG[t.getMonth()]}</h2>${pvol ? `<span class="delta ${vol >= pvol ? 'pos' : 'neg'}">${vol >= pvol ? '+' : '−'}${Math.abs(Math.round((vol / pvol - 1) * 100))} % ggü. Vormonat</span>` : ''}</div>
+        <div class="card-head"><h2>${MONTHS_LONG[t.getMonth()]}</h2><span class="muted">bisher</span></div>
         <div class="totals">
           <div><div class="value">${cur.length}</div><div class="label">Trainings</div></div>
-          <div><div class="value">${fmtKg(vol)}</div><div class="label">bewegt</div></div>
-          <div><div class="value">${fmtHours(sum(cur, (w) => w.durationSec)).replace(' min', 'm').replace(' h ', 'h ')}</div><div class="label">im Gym</div></div>
+          <div><div class="value">${fmtKg(sum(cur, workoutVolume))}</div><div class="label">bewegt</div></div>
+          <div><div class="value">${monthPerfectDays()}</div><div class="label">perfekte Tage</div></div>
         </div>
       </article>
       <article class="card last-w" data-wid="${last.id}">
@@ -305,6 +269,21 @@ function renderHome() {
   }
   $('#home-body').innerHTML = parts.join('');
 }
+/** Nächster Tag, an dem Training fällig und noch nicht erledigt ist */
+function nextGymDay() {
+  const g = gymHabit();
+  for (let i = 0; i < 14; i++) {
+    const k = ymd(addDays(today(), i));
+    if (isDue(g, k) && !isDone(g, k)) return k;
+  }
+  return null;
+}
+function monthPerfectDays() {
+  const t = today();
+  let n = 0;
+  for (let d = new Date(t.getFullYear(), t.getMonth(), 1); d <= t; d = addDays(d, 1)) if (isPerfect(ymd(d))) n++;
+  return n;
+}
 
 function chooseRoutine() {
   openModal(`<h3>Welchen Plan trainierst du?</h3>
@@ -316,13 +295,20 @@ function chooseRoutine() {
 function showDay(k) {
   const list = db.workouts.filter((w) => w.date === k);
   const future = k > ymd(today());
-  openModal(`<h3>${fmtDate(k)}</h3>
-    <p class="muted">${list.length ? `${list.length} ${list.length === 1 ? 'Training' : 'Trainings'}` : future ? 'Noch nicht da' : 'Kein Training eingetragen'}</p>
+  const frozen = isFrozen(k);
+  const due = dueHabits(k);
+  const info = frozen ? 'Pausetag – an diesem Tag ist nichts fällig, deine Serien bleiben erhalten.'
+    : future ? (due.length ? `Geplant: ${due.map((h) => h.name).join(', ')}` : 'Nichts geplant')
+    : isPerfect(k) ? 'Perfekter Tag – alles erledigt.' : due.length ? `${due.filter((h) => isDone(h, k)).length} von ${due.length} erledigt` : '';
+  openModal(`<div data-dayk="${k}"><h3>${fmtDate(k)}</h3>
+    <p class="muted">${info}</p>
+    ${future ? '' : `<div class="h-list day-habits">${db.habits.filter((h) => k >= h.created).map((h) => habitRow(h, k, true)).join('')}</div>`}
     ${list.length ? `<div class="menu">${list.map((w) => `<button class="menu-row" data-wid="${w.id}">${ic('dumbbell')}<span class="grow"><b>${esc(w.title)}</b><span class="muted">${workoutSets(w)} Sätze · ${fmtKg(workoutVolume(w))}</span></span>${ic('arrow-right')}</button>`).join('')}</div>` : ''}
     <div class="modal-actions">
-      ${future ? '' : `<button class="btn primary" data-log-date="${k}">${ic('plus')}Training nachtragen</button>`}
-      <button class="btn" data-close>Schließen</button>
-    </div>`);
+      ${future ? '' : `<button class="btn" data-log-date="${k}">${ic('plus')}Training nachtragen</button>`}
+      <button class="btn" data-freeze="${k}">${ic('pause')}${frozen ? 'Pausetag entfernen' : 'Pausetag (krank, Urlaub)'}</button>
+      <button class="btn primary" data-close>Fertig</button>
+    </div></div>`);
 }
 
 function logPastSheet() {
@@ -411,7 +397,8 @@ function showWorkoutDetail(id) {
  * ================================================================ */
 function renderProgress() {
   const parts = [];
-  const st = weekStreak();
+  const g = gymHabit();
+  const st = { current: habitStreak(g), longest: habitBest(g) };
   const total = db.workouts.length;
   const c = weekCounts();
   const avg = [...Array(8)].reduce((n, _, i) => n + (c[ymd(addDays(mondayOf(today()), -7 * (i + 1)))] || 0), 0) / 8;
@@ -419,11 +406,11 @@ function renderProgress() {
   parts.push(`<article class="card streak-card">
     <div class="streak-top">
       <div class="streak-main">
-        <div class="label">Wochen in Folge mit Wochenziel (${db.settings.weekGoal}× pro Woche)</div>
-        <div class="streak-num"><span id="st-current">${st.current}</span><span class="unit">${st.current === 1 ? 'Woche' : 'Wochen'}</span></div>
+        <div class="label">Trainings in Folge ohne verpassten Trainingstag (${daysText(db.schedule)})</div>
+        <div class="streak-num"><span id="st-current">${st.current}</span><span class="unit">${st.current === 1 ? 'Training' : 'Trainings'}</span></div>
       </div>
       <dl class="facts">
-        <div><dt>Längste Serie</dt><dd>${st.longest}</dd></div>
+        <div><dt>Rekord-Serie</dt><dd>${st.longest}</dd></div>
         <div><dt>Trainings gesamt</dt><dd>${total}</dd></div>
         <div><dt>Ø pro Woche (8 Wochen)</dt><dd>${avg.toFixed(1).replace('.', ',')}</dd></div>
       </dl>
@@ -550,14 +537,13 @@ function renderHeatmap() {
  * ================================================================ */
 function renderSettings() {
   $('#set-name').value = db.profile.name;
-  $('#set-goal').value = String(db.settings.weekGoal);
+  $('#set-days').textContent = daysText(db.schedule);
   $('#set-rest').value = String(db.settings.rest);
   $('#set-bar').value = String(db.settings.bar);
   for (const k of ['sound', 'voice', 'vibrate']) $('#set-' + k).checked = db.settings[k] !== false;
 }
 function initSettings() {
   $('#set-name').addEventListener('input', (e) => { db.profile.name = e.target.value.trim(); saveDb(); });
-  $('#set-goal').addEventListener('change', (e) => { db.settings.weekGoal = Number(e.target.value); saveDb(); });
   $('#set-rest').addEventListener('change', (e) => { db.settings.rest = Number(e.target.value); saveDb(); });
   $('#set-bar').addEventListener('change', (e) => { db.settings.bar = Number(e.target.value); saveDb(); });
   for (const k of ['sound', 'voice', 'vibrate']) $('#set-' + k).addEventListener('change', (e) => { db.settings[k] = e.target.checked; saveDb(); });
@@ -566,7 +552,7 @@ function initSettings() {
   $('#btn-onboard').addEventListener('click', showOnboarding);
   $('#btn-reset').addEventListener('click', async () => {
     if (!await ask('Wirklich ALLE Daten löschen? Das kann nicht rückgängig gemacht werden.', 'Alles löschen')) return;
-    db = defaultDb(); saveDb(); toast('Alle Daten gelöscht'); showOnboarding();
+    db = defaultDb(); ensureHabits(); saveDb(); toast('Alle Daten gelöscht'); showOnboarding();
   });
 }
 
@@ -586,6 +572,7 @@ function importData(file) {
       if (!Array.isArray(d.workouts)) throw new Error();
       const def = defaultDb();
       db = { ...def, ...d, profile: { ...def.profile, ...d.profile, onboarded: true }, settings: { ...def.settings, ...d.settings } };
+      ensureHabits();
       saveDb(); toast('Backup importiert'); showView('home');
     } catch { toast('Ungültige Datei'); }
   };
@@ -595,70 +582,93 @@ function importData(file) {
 /* ================================================================
  *  EINRICHTUNG (erster Start)
  * ================================================================ */
-let ob = { step: 0, name: '', goal: 'muscle', days: 3 };
+let ob = { step: 0, name: '', goal: 'muscle', sched: [0, 2, 4], habits: [] };
+const OB_STEPS = 5;
+const splitFor = (n) => (n <= 2 ? 2 : n >= 6 ? 3 : n);
 function showOnboarding() {
-  ob = { step: 0, name: db.profile.name, goal: db.profile.goal || 'muscle', days: Math.min(5, Math.max(2, db.profile.days || 3)) };
+  const have = (db.habits || []).filter((h) => h.kind !== 'gym').map((h) => h.key);
+  ob = { step: 0, name: db.profile.name, goal: db.profile.goal || 'muscle', sched: [...(db.schedule?.length ? db.schedule : [0, 2, 4])],
+    habits: have.length ? have.filter((k) => k !== 'custom') : ['water', 'protein', 'sleep'] };
   $('#onboard').classList.remove('hidden');
   document.body.classList.add('onboarding');
   renderOnboarding();
 }
 function renderOnboarding() {
-  const dots = `<div class="ob-dots">${[0, 1, 2, 3].map((i) => `<i class="${i <= ob.step ? 'on' : ''}"></i>`).join('')}</div>`;
+  const dots = `<div class="ob-dots">${[...Array(OB_STEPS)].map((_, i) => `<i class="${i <= ob.step ? 'on' : ''}"></i>`).join('')}</div>`;
   const back = ob.step ? `<button class="btn" data-ob="back">${ic('back')}Zurück</button>` : '';
+  const next = (label = 'Weiter', dis = false) => `<button class="btn primary grow" data-ob="next" ${dis ? 'disabled' : ''}>${label}${ic('arrow-right')}</button>`;
+  const sp = SPLITS[splitFor(ob.sched.length)];
   let html = '';
   if (ob.step === 0) {
     html = `<div class="ob-hero"><img src="icons/icon-192.png" alt="" width="72" height="72" /></div>
       <h1 id="ob-title">Willkommen bei Pulse&nbsp;Gym</h1>
-      <p class="ob-lead">Dein Trainingspartner fürs Fitnessstudio: Plan, Sätze, Pausen-Timer und Fortschritt an einem Ort. In drei kurzen Schritten ist dein Plan fertig.</p>
+      <p class="ob-lead">Dein Gym-Habit-Tracker: feste Trainingstage, kleine tägliche Gewohnheiten wie Wasser, Protein und Schlaf – und Serien, die dich dranbleiben lassen.</p>
       <label class="field">Wie heißt du? <input id="ob-name" maxlength="30" placeholder="Dein Vorname (optional)" value="${esc(ob.name)}" /></label>
-      <div class="ob-actions"><button class="btn primary xl grow" data-ob="next">Los geht's${ic('arrow-right')}</button></div>
+      <div class="ob-actions">${next("Los geht's")}</div>
       <button class="link-btn ob-skip" data-ob="demo">Erst mal mit Beispieldaten umschauen</button>`;
   } else if (ob.step === 1) {
     html = `<h1 id="ob-title">Was ist dein Ziel?</h1>
-      <p class="ob-lead">Danach richten sich Sätze, Wiederholungen und Pausen. Du kannst alles später ändern.</p>
+      <p class="ob-lead">Danach richten sich Sätze, Wiederholungen und Pausen in deinem Plan.</p>
       <div class="ob-options">${Object.entries(GOALS).map(([k, g]) => `<button class="ob-opt${ob.goal === k ? ' active' : ''}" data-goal="${k}">
         ${ic(k === 'strength' ? 'bolt' : k === 'muscle' ? 'dumbbell' : 'flame')}<span><b>${g.name}</b><span class="muted">${g.desc}</span></span></button>`).join('')}</div>
-      <div class="ob-actions">${back}<button class="btn primary grow" data-ob="next">Weiter${ic('arrow-right')}</button></div>`;
+      <div class="ob-actions">${back}${next()}</div>`;
   } else if (ob.step === 2) {
-    html = `<h1 id="ob-title">Wie oft willst du trainieren?</h1>
-      <p class="ob-lead">Pro Woche. Lieber realistisch starten – Regelmäßigkeit schlägt alles.</p>
-      <div class="ob-days">${[2, 3, 4, 5].map((n) => `<button class="ob-day${ob.days === n ? ' active' : ''}" data-days="${n}"><b>${n}×</b><span>pro Woche</span></button>`).join('')}</div>
-      <div class="ob-split"><b>${SPLITS[ob.days].name}</b><p class="muted">${SPLITS[ob.days].why}</p></div>
-      <div class="ob-actions">${back}<button class="btn primary grow" data-ob="next">Weiter${ic('arrow-right')}</button></div>`;
+    html = `<h1 id="ob-title">An welchen Tagen trainierst du?</h1>
+      <p class="ob-lead">Feste Tage machen Training zur Gewohnheit. Lieber realistisch starten – du kannst sie jederzeit ändern.</p>
+      <div class="ob-week">${WD.map((d, i) => `<button class="ob-wd${ob.sched.includes(i) ? ' active' : ''}" data-wd="${i}" aria-pressed="${ob.sched.includes(i)}">${d}</button>`).join('')}</div>
+      <div class="ob-split">${ob.sched.length ? `<b>${ob.sched.length}× pro Woche · ${sp.name}</b><p class="muted">${sp.why}</p>` : '<p class="muted">Tippe mindestens einen Tag an.</p>'}</div>
+      <div class="ob-actions">${back}${next('Weiter', !ob.sched.length)}</div>`;
+  } else if (ob.step === 3) {
+    html = `<h1 id="ob-title">Welche Gewohnheiten willst du aufbauen?</h1>
+      <p class="ob-lead">Neben dem Training. Fang mit zwei oder drei an – weniger ist am Anfang mehr.</p>
+      <div class="ob-habits">${HABIT_PRESETS.map((p) => {
+        const on = p.key === 'gym' || ob.habits.includes(p.key);
+        return `<button class="ob-habit${on ? ' active' : ''}" ${p.key === 'gym' ? 'disabled' : `data-obh="${p.key}"`} aria-pressed="${on}">
+          <span class="h-ic">${ic(p.icon)}</span><span class="grow"><b>${p.name}</b><span class="muted">${p.key === 'gym' ? 'Immer dabei · ' + daysText(ob.sched) : p.desc}</span></span>
+          <span class="h-check${on ? ' on' : ''}">${ic('check')}</span></button>`;
+      }).join('')}</div>
+      <div class="ob-actions">${back}${next()}</div>`;
   } else {
-    const plans = SPLITS[ob.days].plans;
-    html = `<h1 id="ob-title">Dein Plan ist fertig</h1>
-      <p class="ob-lead">${SPLITS[ob.days].name} · ${GOALS[ob.goal].name} · ${ob.days}× pro Woche. Die Pläne trainierst du einfach der Reihe nach.</p>
-      <div class="ob-plans">${plans.map((k, i) => `<div class="ob-plan"><span class="ob-n">${i + 1}</span><div><b>${TEMPLATES[k].name}</b>
+    html = `<h1 id="ob-title">Alles bereit</h1>
+      <p class="ob-lead">${GOALS[ob.goal].name} · Training ${daysText(ob.sched)} · ${ob.habits.length + 1} Gewohnheiten. Deine Pläne trainierst du der Reihe nach.</p>
+      <div class="ob-plans">${sp.plans.map((k, i) => `<div class="ob-plan"><span class="ob-n">${i + 1}</span><div><b>${TEMPLATES[k].name}</b>
         <div class="muted">${TEMPLATES[k].ex.map((x) => EX[x].name).join(' · ')}</div></div></div>`).join('')}</div>
-      ${db.routines.length ? '<p class="muted">Hinweis: Deine bisherigen Pläne werden dabei ersetzt. Gespeicherte Trainings bleiben.</p>' : ''}
-      <div class="ob-actions">${back}<button class="btn primary xl grow" data-ob="finish">${ic('check')}Plan übernehmen</button></div>`;
+      ${db.routines.length ? '<p class="muted ob-note">Deine bisherigen Pläne werden ersetzt. Gespeicherte Trainings und Gewohnheiten bleiben.</p>' : ''}
+      <div class="ob-actions">${back}<button class="btn primary xl grow" data-ob="finish">${ic('check')}Los geht's</button></div>`;
   }
   $('#onboard-in').innerHTML = dots + `<div class="ob-step">${html}</div>`;
-  $('#onboard-in').scrollTop = 0;
+  $('#onboard').scrollTop = 0;
 }
 function onboardClick(e) {
-  const b = e.target.closest('[data-ob],[data-goal],[data-days]');
+  const b = e.target.closest('[data-ob],[data-goal],[data-wd],[data-obh]');
   if (!b) return;
-  if (b.dataset.goal) { ob.goal = b.dataset.goal; return renderOnboarding(); }
-  if (b.dataset.days) { ob.days = Number(b.dataset.days); return renderOnboarding(); }
-  const a = b.dataset.ob;
+  const d = b.dataset;
+  if (d.goal) { ob.goal = d.goal; return renderOnboarding(); }
+  if (d.wd) { const i = Number(d.wd); ob.sched = ob.sched.includes(i) ? ob.sched.filter((x) => x !== i) : [...ob.sched, i].sort(); return renderOnboarding(); }
+  if (d.obh) { ob.habits = ob.habits.includes(d.obh) ? ob.habits.filter((x) => x !== d.obh) : [...ob.habits, d.obh]; return renderOnboarding(); }
   if (ob.step === 0) ob.name = $('#ob-name')?.value.trim() || '';
-  if (a === 'next') ob.step++;
-  if (a === 'back') ob.step--;
-  if (a === 'demo') { db.profile.name = ob.name; finishOnboarding(true); return loadDemo(true); }
-  if (a === 'finish') return finishOnboarding();
+  if (d.ob === 'next') ob.step++;
+  if (d.ob === 'back') ob.step--;
+  if (d.ob === 'demo') { db.profile.name = ob.name; finishOnboarding(true); return loadDemo(true); }
+  if (d.ob === 'finish') return finishOnboarding();
   renderOnboarding();
 }
 function finishOnboarding(silent) {
-  db.profile = { name: ob.name, goal: ob.goal, days: ob.days, onboarded: true };
-  db.settings.weekGoal = ob.days;
+  const n = splitFor(ob.sched.length);
+  db.profile = { name: ob.name, goal: ob.goal, days: ob.sched.length, onboarded: true };
+  db.schedule = [...ob.sched];
+  db.settings.weekGoal = ob.sched.length;
   db.settings.rest = GOALS[ob.goal].rest;
-  db.routines = SPLITS[ob.days].plans.map((k) => routineFromTemplate(k, ob.goal));
+  db.routines = SPLITS[n].plans.map((k) => routineFromTemplate(k, ob.goal));
+  // vorhandene Gewohnheiten (mit Verlauf) behalten, neue ergänzen
+  const keep = db.habits.filter((h) => h.kind === 'gym' || h.key === 'custom' || ob.habits.includes(h.key));
+  for (const k of ob.habits) if (!keep.some((h) => h.key === k)) keep.push(makeHabit(k));
+  db.habits = keep;
+  ensureHabits();
   saveDb();
   $('#onboard').classList.add('hidden');
   document.body.classList.remove('onboarding');
-  if (!silent) { toast('Dein Plan ist bereit'); showView('home'); }
+  if (!silent) { toast('Los geht\'s – hak heute deine ersten Gewohnheiten ab'); showView('home'); }
 }
 
 /* ---------------- Beispieldaten ---------------- */
@@ -668,6 +678,11 @@ const DEMO_BASE = { bench: 50, incline: 40, db_bench: 20, squat: 60, deadlift: 8
 async function loadDemo(skipConfirm) {
   if (!skipConfirm && db.workouts.length && !await ask('Beispieldaten zu deinen bestehenden Daten hinzufügen?', 'Hinzufügen', false)) return;
   if (!db.routines.length) db.routines = SPLITS[3].plans.map((k) => routineFromTemplate(k, 'muscle'));
+  db.schedule = [0, 2, 4];
+  db.settings.weekGoal = 3;
+  const start = ymd(addDays(today(), -84));
+  for (const k of ['water', 'protein', 'sleep', 'creatine']) if (!db.habits.some((h) => h.key === k)) db.habits.push(makeHabit(k, start));
+  for (const h of db.habits) if (h.created > start) h.created = start;
   const cur = { ...DEMO_BASE };
   const rnd = (a, b) => a + Math.random() * (b - a);
   let ri = 0;
@@ -675,7 +690,7 @@ async function loadDemo(skipConfirm) {
   for (let i = 84; i >= 1; i--) {
     const d = addDays(t, -i);
     const wd = (d.getDay() + 6) % 7;
-    if (![0, 2, 4].includes(wd) || Math.random() < 0.12) continue;
+    if (![0, 2, 4].includes(wd) || (i > 21 && Math.random() < 0.12)) continue;
     const r = db.routines[ri++ % db.routines.length];
     const exercises = r.ex.map((e) => {
       const info = exInfo(e.exId);
@@ -693,7 +708,21 @@ async function loadDemo(skipConfirm) {
       createdAt: new Date(d.getTime() + 18 * 3600000).toISOString(), demo: true });
     if (wd === 0) db.body.push({ date: ymd(d), kg: Math.round((78 + (84 - i) * 0.025 + rnd(-0.4, 0.4)) * 10) / 10 });
   }
+  // Gewohnheiten: am Anfang lückenhafter, später zuverlässiger
+  for (let i = 84; i >= 1; i--) {
+    const k = ymd(addDays(t, -i)), p = 0.62 + (84 - i) * 0.0045;
+    for (const h of db.habits) {
+      if (h.kind === 'gym' || Math.random() > p) continue;
+      db.log[k] = db.log[k] || {};
+      db.log[k][h.id] = h.kind === 'count' ? h.target - (Math.random() < 0.15 ? 2 : 0) : true;
+    }
+  }
+  for (let i = 1; i <= 6; i++) { // letzte Tage perfekt, damit Serien sichtbar sind
+    const k = ymd(addDays(t, -i));
+    for (const h of db.habits) if (h.kind !== 'gym') { db.log[k] = db.log[k] || {}; db.log[k][h.id] = h.kind === 'count' ? h.target : true; }
+  }
   for (const r of db.routines) for (const e of r.ex) if (!exInfo(e.exId).bw) e.weight = Math.round((cur[e.exId] ?? 20) * 2) / 2 - exInfo(e.exId).inc;
+  checkBadges(true);
   saveDb();
   toast('Beispieldaten geladen');
   showView('home');
@@ -712,6 +741,7 @@ function showView(v) {
   document.body.dataset.page = v;
   if (v === 'home') renderHome();
   if (v === 'plans') renderPlans();
+  if (v === 'habits') renderHabits();
   if (v === 'history') renderHistory();
   if (v === 'progress') renderProgress();
   if (v === 'settings') renderSettings();
@@ -786,14 +816,20 @@ $('#onboard').addEventListener('click', onboardClick);
 
 function init() {
   db = loadDb();
+  ensureHabits();
+  checkBadges(true);
   initWorkout();
   initSettings();
   const hash = location.hash.slice(1);
   if (!db.profile.onboarded) showOnboarding();
+  // nach Mitternacht oder Rückkehr in die App die Startseite auffrischen
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && currentView === 'home' && $('#modal').classList.contains('hidden')) renderHome();
+  });
   if (hash === 'start' && db.profile.onboarded) {
     if (db.active) showView('workout'); else { const r = nextRoutine(); r ? startWorkout(r.id) : showView('home'); }
   } else if (db.active) showView('workout');
-  else showView(['home', 'plans', 'history', 'progress'].includes(hash) ? hash : 'home');
+  else showView(['home', 'habits', 'plans', 'history', 'progress'].includes(hash) ? hash : 'home');
   setupInstall();
   if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.serviceWorker.register('sw.js').catch(() => {});
   window.addEventListener('beforeunload', (e) => { if (C.on) { e.preventDefault(); e.returnValue = ''; } });
