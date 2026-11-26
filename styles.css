@@ -762,6 +762,13 @@ body.resting .toast { bottom: 100px; }
 /* ---------- Tempo-Coach ---------- */
 .coach { text-align: center; }
 .coach .pl-anim { max-width: 380px; }
+/* 3D-Figur (WebGL); ohne WebGL bleibt die 2D-Figur */
+.model3d { display: none; width: 100%; aspect-ratio: 6 / 5; max-height: 380px; touch-action: pan-y; cursor: grab; }
+.model3d:active { cursor: grabbing; }
+.m3d-hint { display: none; text-align: center; font-size: var(--t-label); color: var(--muted); margin-top: calc(-1 * var(--s-1)); }
+.has-3d .model3d, .has-3d .m3d-hint { display: block; }
+.has-3d #pl-anim { display: none; }
+img.model { object-fit: contain; }
 .coach-tempo { display: flex; align-items: center; gap: var(--s-2); justify-content: center; margin-top: var(--s-4); font-size: var(--t-small); color: var(--muted); }
 .coach-tempo select { width: auto; min-height: 40px; font-size: 15px; }
 .coach-nofig { padding: var(--s-5) 0; }

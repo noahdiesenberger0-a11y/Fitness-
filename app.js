@@ -627,6 +627,8 @@ function showView(v) {
   if (!same) window.scrollTo(0, PUSHED[v] ? 0 : scrollMemory[v] || 0);
   onScroll();
 }
+// 3D-Figuren laden asynchron: danach Vorschaubilder der aktuellen Ansicht neu zeichnen
+window.addEventListener('model3d-ready', () => renderCurrent());
 function onScroll() { document.body.classList.toggle('scrolled', window.scrollY > 36); }
 
 /* ---------------- Filter-Chips (ersetzen Auswahlfelder) ---------------- */

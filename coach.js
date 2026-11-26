@@ -47,6 +47,8 @@ function coachMarkup(title, sub, extra) {
       <button class="icon-btn" data-close aria-label="Schließen">${ic('x')}</button></div>
     <div class="pl-phase" id="pl-phase" aria-live="polite">Bereit</div>
     ${info.model ? `<svg class="pl-anim model" id="pl-anim" viewBox="${modelViewBox(info.model)}" aria-hidden="true"></svg>
+      <canvas class="pl-anim model3d" id="pl-anim3d" aria-label="3D-Figur, zum Drehen seitlich ziehen"></canvas>
+      <div class="m3d-hint">Zum Drehen ziehen</div>
       <div class="muscle-tags">${modelMuscleNames(info.model).map((m) => `<span>${m}</span>`).join('')}</div>`
       : `<p class="muted coach-nofig">Für diese Übung gibt es noch keine Figur. Der Takt läuft trotzdem.</p>`}
     <div class="pl-phasebar"><i id="pl-phasefill"></i></div>
@@ -56,8 +58,11 @@ function coachMarkup(title, sub, extra) {
 
 function drawFigure(pos) {
   const info = exInfo(C.exId);
+  if (!info.model) return;
+  const cv = document.getElementById('pl-anim3d');
+  if (window.Model3D?.ready && cv) return Model3D.draw(cv, info.model, pos);
   const svg = document.getElementById('pl-anim');
-  if (svg && info.model) svg.innerHTML = modelSvg(info.model, pos);
+  if (svg) svg.innerHTML = modelSvg(info.model, pos);
 }
 
 /* ---------- Vorführen ---------- */
