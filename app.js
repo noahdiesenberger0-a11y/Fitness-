@@ -1,50 +1,122 @@
 'use strict';
 
 /* ============================================================
- *  Pulse – Fitness Tracker
- *  Daten liegen lokal im Browser (localStorage).
+ *  Pulse – Krafttraining-Tracker
+ *  Kern: Daten, Helfer, Streaks, Heatmap, Profil, Verlauf, Cardio.
+ *  Daten liegen lokal im Browser (localStorage). Das Datenmodell ist so
+ *  angelegt, dass es später 1:1 auf einen Server (Konten, Teilen) passt.
  * ============================================================ */
 
-const TYPES = {
-  run:   { name: 'Laufen',        icon: 'run', distance: true,  pace: 'min' },
-  ride:  { name: 'Radfahren',     icon: 'ride', distance: true,  pace: 'speed' },
-  swim:  { name: 'Schwimmen',     icon: 'swim', distance: true,  pace: 'swim' },
-  hike:  { name: 'Wandern',       icon: 'hike', distance: true,  pace: 'min' },
-  walk:  { name: 'Gehen',         icon: 'walk', distance: true,  pace: 'min' },
-  gym:   { name: 'Krafttraining', icon: 'dumbbell', distance: false },
-  yoga:  { name: 'Yoga',          icon: 'yoga', distance: false },
-  other: { name: 'Sonstiges',     icon: 'bolt', distance: false },
-};
-
-const STORE_KEY = 'pulse.v1';
-const DAY_MS = 86400000;
+const STORE_KEY = 'pulse.v2';
+const OLD_KEY = 'pulse.v1';
+const OLD_PLAN_KEY = 'pulse.strength';
 const WEEKDAYS = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
 const MONTHS = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
 
+/** Cardio ist Nebensache: einfache Einträge ohne GPS */
+const CARDIO = {
+  run:   { name: 'Laufen', icon: 'run' },
+  ride:  { name: 'Radfahren', icon: 'ride' },
+  swim:  { name: 'Schwimmen', icon: 'swim' },
+  walk:  { name: 'Gehen', icon: 'walk' },
+  hike:  { name: 'Wandern', icon: 'hike' },
+  yoga:  { name: 'Yoga & Mobility', icon: 'yoga' },
+  other: { name: 'Sonstiges', icon: 'bolt' },
+};
+
+const VISIBILITY = { public: 'Öffentlich', followers: 'Nur Follower', private: 'Privat' };
+
 /* ---------------- State ---------------- */
-let state = load();
+function blankState() {
+  return {
+    version: 2,
+    profile: { name: '', visibility: 'public' },
+    workouts: [],
+    cardio: [],
+    splits: [],
+    activeSplitId: null,
+    customExercises: [],
+    marks: {},
+    settings: { sound: true, voice: true, vibrate: true, autoRest: true },
+    sync: { hashes: {} }, // Stand des Cloud-Abgleichs (cloud.js)
+  };
+}
+
+/** Wird in init() geladen, wenn alle Skripte (auch exercises.js) bereit sind */
+let state = null;
 let period = 'week';
 
 function load() {
   try {
     const s = JSON.parse(localStorage.getItem(STORE_KEY));
-    if (s && Array.isArray(s.activities)) return { activities: s.activities, marks: s.marks || {} };
+    if (s && s.version === 2) return { ...blankState(), ...s, settings: { ...blankState().settings, ...s.settings }, sync: { hashes: {}, ...s.sync } };
   } catch (e) { /* ignore */ }
-  return { activities: [], marks: {} };
-}
-function save() {
-  try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); }
-  catch (e) { toast('Speichern fehlgeschlagen'); }
+  return migrate();
 }
 
-/* ---------------- Helpers ---------------- */
+/**
+ * Daten der alten Lauf-App übernehmen:
+ *  - Krafttrainings → Trainings (Übungen per Name zugeordnet)
+ *  - alle anderen Aktivitäten → Cardio-Einträge
+ *  - der alte Kraft-Plan → ein Split „Mein Plan“
+ * Die alten Daten bleiben unangetastet gespeichert.
+ */
+function migrate() {
+  const s = blankState();
+  let old = null, oldPlan = null;
+  try { old = JSON.parse(localStorage.getItem(OLD_KEY)); } catch (e) { /* ignore */ }
+  try { oldPlan = JSON.parse(localStorage.getItem(OLD_PLAN_KEY)); } catch (e) { /* ignore */ }
+  if (old && Array.isArray(old.activities)) {
+    s.marks = old.marks || {};
+    for (const a of old.activities) {
+      if (a.demo) continue;
+      if (a.type === 'gym' && a.exercises?.length) {
+        s.workouts.push({
+          id: a.id, date: a.date, title: a.title, durationSec: a.durationSec,
+          exercises: a.exercises.map((e) => {
+            const lib = exByName(e.name);
+            return { exId: lib ? lib.id : 'old-' + e.name, name: e.name, sets: e.sets.map((x) => ({ weight: x.weight || 0, reps: x.reps })) };
+          }),
+          feel: a.feel || '', notes: a.notes || '', visibility: 'public', createdAt: a.createdAt || new Date().toISOString(),
+        });
+      } else {
+        s.cardio.push({
+          id: a.id, date: a.date, kind: a.type === 'gym' ? 'other' : (CARDIO[a.type] ? a.type : 'other'),
+          title: a.title, durationSec: a.durationSec, distanceKm: a.distanceKm || 0,
+          notes: a.notes || '', createdAt: a.createdAt || new Date().toISOString(),
+        });
+      }
+    }
+  }
+  if (oldPlan && Array.isArray(oldPlan.plan) && oldPlan.plan.length) {
+    const split = {
+      id: uid(), name: 'Mein Plan', goal: '', level: '', perWeek: 3, description: 'Aus deinem bisherigen Kraft-Plan übernommen.',
+      days: [{ id: uid(), name: 'Training', exercises: oldPlan.plan.map((p) => {
+        const lib = LIBRARY.find((x) => x.id === p.exId) || exByName(p.name);
+        return { exId: lib ? lib.id : 'old-' + p.name, name: p.name, sets: p.sets, repsMin: p.reps, repsMax: p.reps, rest: p.rest || 90, tempo: p.tempo || '2-0-1-0' };
+      }) }],
+      createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+    };
+    s.splits.push(split);
+    s.activeSplitId = split.id;
+    for (const k of ['sound', 'voice', 'vibrate']) if (oldPlan[k] === false) s.settings[k] = false;
+  }
+  return s;
+}
+
+/** Speichert lokal und stößt (wenn angemeldet) den Cloud-Abgleich an. noSync: nur lokal. */
+function save(noSync) {
+  try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); }
+  catch (e) { toast('Speichern fehlgeschlagen'); }
+  if (!noSync && typeof scheduleSync === 'function') scheduleSync();
+}
+
+/* ---------------- Helfer ---------------- */
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => [...document.querySelectorAll(s)];
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 /** Icon aus dem SVG-Set in index.html */
 const ic = (name, cls = '') => `<svg class="i ${cls}" aria-hidden="true"><use href="#i-${name}"/></svg>`;
-/** Gefühl ohne alte Emojis anzeigen */
-const feelText = (f) => String(f || '').replace(/^[^\p{L}]+/u, '');
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 
 function ymd(d) {
@@ -62,143 +134,135 @@ function fmtDur(sec) {
 }
 function fmtHours(sec) {
   const h = Math.floor(sec / 3600), m = Math.round((sec % 3600) / 60);
-  return h ? `${h}h ${m}m` : `${m}m`;
+  return h ? `${h} h ${m} min` : `${m} min`;
 }
 function parseDur(str) {
   const p = String(str).trim().split(':').map(Number);
   if (p.some(isNaN)) return NaN;
+  if (p.length === 1) return p[0] * 60; // nur Minuten
   return p.reduce((acc, v) => acc * 60 + v, 0);
 }
-function fmtKm(km) { return km >= 100 ? km.toFixed(0) : km.toFixed(2); }
-function fmtDate(s) {
-  return parseYmd(s).toLocaleDateString('de-DE', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+function fmtDate(s, opts = { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }) {
+  return parseYmd(s).toLocaleDateString('de-DE', opts);
+}
+/** „Heute“, „Gestern“, sonst Datum */
+function fmtDateRel(s) {
+  const k = ymd(today());
+  if (s === k) return 'Heute';
+  if (s === ymd(addDays(today(), -1))) return 'Gestern';
+  return fmtDate(s, { weekday: 'short', day: 'numeric', month: 'short' });
 }
 
-/** Pace/Speed je nach Sportart. secPerKm = Sekunden pro km. */
-function fmtPace(type, secPerKm) {
-  if (!isFinite(secPerKm) || secPerKm <= 0) return '–';
-  const t = TYPES[type] || {};
-  if (t.pace === 'speed') return (3600 / secPerKm).toFixed(1) + ' km/h';
-  if (t.pace === 'swim') return fmtDur(secPerKm / 10) + ' /100m';
-  return fmtDur(secPerKm) + ' /km';
-}
-function paceLabel(type) {
-  const t = TYPES[type] || {};
-  return t.pace === 'speed' ? 'Ø Tempo' : 'Ø Pace';
-}
-
-function toast(msg) {
+function toast(msg, kind = '') {
   const t = $('#toast');
-  t.textContent = msg;
-  t.classList.remove('hidden');
+  t.innerHTML = msg;
+  t.className = 'toast ' + kind;
   clearTimeout(toast._t);
-  toast._t = setTimeout(() => t.classList.add('hidden'), 2200);
+  toast._t = setTimeout(() => t.classList.add('hidden'), kind === 'pr' ? 3200 : 2200);
 }
+function sum(list, f) { return list.reduce((a, x) => a + (f(x) || 0), 0); }
 
-/* ---------------- Aggregation ---------------- */
-function activitiesByDay(filterType) {
+/** Alle Einträge (Kraft + Cardio) für Kalender und Streaks */
+function allEntries() {
+  return [
+    ...state.workouts.map((w) => ({ ...w, entry: 'strength' })),
+    ...state.cardio.map((c) => ({ ...c, entry: 'cardio' })),
+  ];
+}
+function entriesByDay(filter) {
   const map = new Map();
-  for (const a of state.activities) {
-    if (filterType && a.type !== filterType) continue;
+  for (const a of allEntries()) {
+    if (filter && a.entry !== filter) continue;
     if (!map.has(a.date)) map.set(a.date, []);
     map.get(a.date).push(a);
   }
   return map;
 }
 
-/**
- * Streak-Regeln:
- *  - Ein Tag mit Aktivität oder als Ruhetag markiert hält die Streak.
- *  - Ein Tag ohne Eintrag oder ein "Skip" bricht sie.
+/* ---------------- Streaks ----------------
+ *  - Ein Tag mit Training oder als Ruhetag markiert hält die Streak.
+ *  - Ein Tag ohne Eintrag oder ein „Skip“ bricht sie.
  *  - Heute zählt noch nicht als Bruch (der Tag ist ja noch nicht vorbei).
- *  Gezählt werden nur Tage mit Aktivität.
+ *  Gezählt werden nur Tage mit Training.
  */
 function computeStreaks() {
-  const byDay = activitiesByDay();
+  const byDay = entriesByDay();
   const keeps = (key) => byDay.has(key) || state.marks[key] === 'rest';
   const active = (key) => byDay.has(key);
 
-  // Aktuelle Streak
   let current = 0;
   let d = today();
   if (!keeps(ymd(d))) d = addDays(d, -1);
-  while (keeps(ymd(d))) {
-    if (active(ymd(d))) current++;
-    d = addDays(d, -1);
-  }
+  while (keeps(ymd(d))) { if (active(ymd(d))) current++; d = addDays(d, -1); }
 
-  // Längste Streak
   const keys = [...byDay.keys()].sort();
   let longest = 0;
   if (keys.length) {
     let run = 0;
-    const end = today();
-    for (let x = parseYmd(keys[0]); x <= end; x = addDays(x, 1)) {
+    for (let x = parseYmd(keys[0]), end = today(); x <= end; x = addDays(x, 1)) {
       const k = ymd(x);
-      if (keeps(k)) { if (active(k)) run++; longest = Math.max(longest, run); }
-      else run = 0;
+      if (keeps(k)) { if (active(k)) run++; longest = Math.max(longest, run); } else run = 0;
     }
   }
 
-  // Wochen-Streak (Wochen in Folge mit mind. 1 Aktivität, Mo–So)
   const weeks = new Set(keys.map((k) => ymd(mondayOf(parseYmd(k)))));
   let weekStreak = 0;
   let w = mondayOf(today());
   if (!weeks.has(ymd(w))) w = addDays(w, -7);
   while (weeks.has(ymd(w))) { weekStreak++; w = addDays(w, -7); }
 
-  // Skips der letzten 365 Tage
   const from = ymd(addDays(today(), -364));
   const skips = Object.entries(state.marks).filter(([k, v]) => v === 'skip' && k >= from).length;
-
   return { current, longest, weekStreak, skips };
 }
 
-function sum(list, f) { return list.reduce((a, x) => a + (f(x) || 0), 0); }
+/* ---------------- Profil ---------------- */
+function renderProfile() {
+  const name = state.profile.name || 'Du';
+  $('#pf-avatar').textContent = name.trim().charAt(0).toUpperCase() || 'D';
+  renderIconPick();
+  $('#pf-name').textContent = name;
+  $('#pf-vis').value = state.profile.visibility || 'public';
+  const n = state.workouts.length;
+  $('#pf-sub').textContent = `${n} Training${n === 1 ? '' : 's'} · ${fmtKg(workoutVolume(state.workouts.flatMap((w) => w.exercises)))} bewegt`;
 
-/* ---------------- Rendering: Dashboard ---------------- */
-function renderDashboard() {
   const s = computeStreaks();
-  $('#welcome').classList.toggle('hidden', state.activities.length > 0);
   $('#st-current').textContent = s.current;
   $('#st-unit').textContent = s.current === 1 ? 'Tag' : 'Tage';
-  const doneToday = state.activities.some((a) => a.date === ymd(today()));
+  const doneToday = allEntries().some((a) => a.date === ymd(today()));
   $('#st-note').textContent = doneToday
-    ? 'Heute erledigt. Morgen geht es weiter.'
-    : s.current > 0 ? 'Trainiere heute, um deine Streak zu halten. Ruhetage zählen auch.' : 'Trainiere heute, um eine neue Streak zu starten.';
+    ? 'Heute erledigt.'
+    : s.current > 0 ? 'Trainiere heute, um sie zu halten.' : 'Trainiere heute, um neu zu starten.';
   $('#st-longest').textContent = s.longest;
   $('#st-weeks').textContent = s.weekStreak;
   $('#st-skips').textContent = s.skips;
   renderHeatmap();
+  const recs = recordSummary(5);
+  $('#pf-records-card').classList.toggle('hidden', !recs.length);
+  $('#pf-records').innerHTML = recordRows(recs);
   renderTotals();
-  renderWeekChart();
-  renderPRs();
+  renderHistory();
+  renderAccount();
+  if (typeof renderMySocial === 'function') renderMySocial();
 }
 
 function renderHeatmap() {
   const filter = $('#heat-filter').value;
-  const byDay = activitiesByDay(filter);
+  const byDay = entriesByDay(filter);
   const end = today();
-  const start = addDays(mondayOf(end), -52 * 7); // 53 Wochen, Wochenstart Montag
-  const el = $('#heatmap');
+  const start = addDays(mondayOf(end), -52 * 7);
   const parts = [];
+  ['Mo', '', 'Mi', '', 'Fr', '', ''].forEach((l, i) => parts.push(`<div class="daylbl" style="grid-row:${i + 2}">${l}</div>`));
 
-  // Wochentags-Labels
-  ['Mo', '', 'Mi', '', 'Fr', '', ''].forEach((l, i) =>
-    parts.push(`<div class="daylbl" style="grid-row:${i + 2}">${l}</div>`));
-
-  // Intensitäts-Stufen anhand Minuten pro Tag (Quantile der eigenen Daten)
-  const mins = [];
-  for (const list of byDay.values()) mins.push(sum(list, (a) => a.durationSec) / 60);
-  mins.sort((a, b) => a - b);
+  // Stufen nach Minuten pro Tag (Quantile der eigenen Daten)
+  const mins = [...byDay.values()].map((l) => sum(l, (a) => a.durationSec) / 60).sort((a, b) => a - b);
   const q = (p) => mins.length ? mins[Math.min(mins.length - 1, Math.floor(p * mins.length))] : 0;
   const t1 = q(0.25), t2 = q(0.5), t3 = q(0.75);
   const level = (m) => (m <= 0 ? 0 : m <= t1 ? 1 : m <= t2 ? 2 : m <= t3 ? 3 : 4);
 
-  let count = 0, col = 2, lastMonth = -1; // Spalte 1 = Wochentags-Labels
+  let count = 0, col = 2, lastMonth = -1;
   const todayKey = ymd(end);
   for (let wk = new Date(start); wk <= end; wk = addDays(wk, 7), col++) {
-    // Monats-Label in der Woche, die den 1. eines Monats enthält
     const first = [...Array(7)].map((_, i) => addDays(wk, i)).find((x) => x.getDate() === 1);
     if (first && first.getMonth() !== lastMonth) {
       parts.push(`<div class="month" style="grid-column:${col}">${MONTHS[first.getMonth()]}</div>`);
@@ -207,31 +271,25 @@ function renderHeatmap() {
     for (let i = 0; i < 7; i++) {
       const d = addDays(wk, i);
       const k = ymd(d);
-      let cls = 'cell';
-      let tip;
+      let cls = 'cell', tip;
       if (d > end) cls += ' future';
       const list = byDay.get(k);
       if (list) {
         count += list.length;
         const mm = sum(list, (a) => a.durationSec) / 60;
-        const km = sum(list, (a) => a.distanceKm);
         cls += ' l' + level(mm);
-        tip = `${list.length} Aktivität${list.length > 1 ? 'en' : ''} · ${Math.round(mm)} min${km ? ' · ' + fmtKm(km) + ' km' : ''}`;
-      } else if (state.marks[k] === 'rest') {
-        cls += ' rest'; tip = 'Ruhetag';
-      } else if (state.marks[k] === 'skip') {
-        cls += ' skip'; tip = 'Skip – ausgelassen';
-      } else {
-        tip = 'Keine Aktivität';
-      }
+        tip = list.map((a) => a.title).join(', ') + ` · ${Math.round(mm)} min`;
+      } else if (state.marks[k] === 'rest') { cls += ' rest'; tip = 'Ruhetag'; }
+      else if (state.marks[k] === 'skip') { cls += ' skip'; tip = 'Skip – ausgelassen'; }
+      else tip = 'Kein Training';
       if (k === todayKey) cls += ' today';
-      parts.push(`<div class="${cls}" style="grid-column:${col};grid-row:${i + 2}" data-day="${k}" title="${fmtDate(k)}: ${tip}"></div>`);
+      parts.push(`<div class="${cls}" style="grid-column:${col};grid-row:${i + 2}" data-day="${k}" title="${esc(fmtDate(k))}: ${esc(tip)}"></div>`);
     }
   }
-  el.innerHTML = parts.join('');
-  $('#contrib-title').textContent = `${count} Aktivität${count === 1 ? '' : 'en'} im letzten Jahr`;
-  // ans Ende (heute) scrollen
-  el.parentElement.scrollLeft = el.parentElement.scrollWidth;
+  $('#heatmap').innerHTML = parts.join('');
+  $('#contrib-title').textContent = `${count} Einheit${count === 1 ? '' : 'en'} im letzten Jahr`;
+  const wrap = $('#heatmap').parentElement;
+  wrap.scrollLeft = wrap.scrollWidth;
 }
 
 function periodStart(p) {
@@ -240,242 +298,164 @@ function periodStart(p) {
   if (p === 'month') return new Date(t.getFullYear(), t.getMonth(), 1);
   return new Date(t.getFullYear(), 0, 1);
 }
-
 function renderTotals() {
   const from = ymd(periodStart(period));
-  const list = state.activities.filter((a) => a.date >= from);
-  const secs = sum(list, (a) => a.durationSec);
-  const km = sum(list, (a) => a.distanceKm);
+  const ws = state.workouts.filter((w) => w.date >= from);
+  const cs = state.cardio.filter((c) => c.date >= from);
+  const secs = sum(ws, (w) => w.durationSec) + sum(cs, (c) => c.durationSec);
   $('#totals').innerHTML = `
-    <div><div class="value">${list.length}</div><div class="label">Aktivitäten</div></div>
-    <div><div class="value">${fmtKm(km)}</div><div class="label">km</div></div>
-    <div><div class="value">${fmtHours(secs)}</div><div class="label">Zeit</div></div>`;
-
-  const byType = {};
-  for (const a of list) byType[a.type] = (byType[a.type] || 0) + a.durationSec;
-  const max = Math.max(1, ...Object.values(byType));
-  $('#type-breakdown').innerHTML = Object.entries(byType)
-    .sort((a, b) => b[1] - a[1])
-    .map(([t, sec]) => `<div class="bar-row"><span class="type">${ic(TYPES[t]?.icon || 'bolt')}${TYPES[t]?.name || t}</span>
-      <div class="bar"><i style="width:${(sec / max) * 100}%"></i></div><span class="num">${fmtHours(sec)}</span></div>`)
-    .join('') || '<p class="muted">Noch keine Aktivitäten in diesem Zeitraum.</p>';
+    <div><div class="value">${ws.length}</div><div class="label">Krafttrainings</div></div>
+    <div><div class="value">${fmtKg(workoutVolume(ws.flatMap((w) => w.exercises)))}</div><div class="label">Volumen</div></div>
+    <div><div class="value">${fmtHours(secs)}</div><div class="label">Zeit${cs.length ? ` · ${cs.length}× Cardio` : ''}</div></div>`;
 }
 
-function renderWeekChart() {
-  const cur = mondayOf(today());
-  const weeks = [];
-  for (let i = 11; i >= 0; i--) {
-    const start = addDays(cur, -7 * i);
-    const s = ymd(start), e = ymd(addDays(start, 7));
-    const mins = sum(state.activities.filter((a) => a.date >= s && a.date < e), (a) => a.durationSec) / 60;
-    weeks.push({ start, mins, cur: i === 0 });
-  }
-  const max = Math.max(30, ...weeks.map((w) => w.mins));
-  $('#weekchart').innerHTML = weeks.map((w) => `
-    <div class="wk${w.cur ? ' cur' : ''}" title="Woche ab ${w.start.toLocaleDateString('de-DE')}: ${Math.round(w.mins)} min">
-      <span>${w.mins ? Math.round(w.mins) : ''}</span>
-      <i style="height:${(w.mins / max) * 100}%"></i>
-      <span>${w.start.getDate()}.${w.start.getMonth() + 1}.</span>
-    </div>`).join('');
-}
-
-function renderPRs() {
-  const acts = state.activities;
-  const prs = [];
-  const best = (list, f) => list.reduce((b, a) => (f(a) > (b ? f(b) : -Infinity) ? a : b), null);
-
-  const runs = acts.filter((a) => a.type === 'run' && a.distanceKm > 0);
-  const longestRun = best(runs, (a) => a.distanceKm);
-  if (longestRun) prs.push(['Längster Lauf', fmtKm(longestRun.distanceKm) + ' km', longestRun]);
-
-  let fastest = null;
-  for (const a of runs) splitPaces(a.splits || [], a.distanceKm).forEach((x, i) => {
-    if (!x.partial && (!fastest || x.pace < fastest.sec)) fastest = { sec: x.pace, a, i };
-  });
-  if (fastest) prs.push(['Schnellster km (Laufen)', fmtDur(fastest.sec) + ' /km', fastest.a, `km ${fastest.i + 1}`]);
-
-  for (const [dist, label] of [[5, '5 km'], [10, '10 km'], [21.1, 'Halbmarathon']]) {
-    const cands = runs.filter((a) => a.distanceKm >= dist);
-    const b = best(cands, (a) => -a.durationSec / a.distanceKm);
-    if (b) prs.push([`Beste Pace ≥ ${label}`, fmtPace('run', b.durationSec / b.distanceKm), b]);
-  }
-
-  const rides = acts.filter((a) => a.type === 'ride' && a.distanceKm > 0);
-  const longestRide = best(rides, (a) => a.distanceKm);
-  if (longestRide) prs.push(['Längste Radtour', fmtKm(longestRide.distanceKm) + ' km', longestRide]);
-
-  const longest = best(acts, (a) => a.durationSec);
-  if (longest) prs.push(['Längste Einheit', fmtDur(longest.durationSec), longest]);
-
-  // Aktivster Tag & Monat
-  const byDay = activitiesByDay();
-  let bestDay = null;
-  for (const [k, list] of byDay) {
-    const s = sum(list, (a) => a.durationSec);
-    if (!bestDay || s > bestDay.s) bestDay = { k, s };
-  }
-  if (bestDay) prs.push(['Aktivster Tag', fmtHours(bestDay.s), null, fmtDate(bestDay.k)]);
-
-  prs.push(...strengthPRs());
-
-  $('#prs').innerHTML = prs.map(([label, value, a, extra]) => `
-    <div class="pr"${a ? ` data-id="${a.id}"` : ''}>
-      <div><div class="label">${label}</div>
-      <div class="sub">${a ? esc(a.title) + ' · ' + fmtDate(a.date) : ''}${extra ? (a ? ' · ' : '') + extra : ''}</div></div>
-      <div class="value">${value}</div>
-    </div>`).join('') || '<p class="muted">Trag deine erste Aktivität ein, um Bestleistungen zu sammeln.</p>';
-}
-
+/* ---------------- Verlauf / Feed-Karten ---------------- */
 /**
- * Splits werden als Sekunden pro Abschnitt gespeichert. Der letzte Abschnitt kann ein
- * angefangener km sein (z.B. 0,73 km) – hier wird er auf Sekunden pro km hochgerechnet.
- * Rückgabe: [{ km: Label, pace: s/km, partial: bool }]
+ * Trainings-Karte. Für fremde (oder aus der Cloud geladene) Trainings:
+ * o.who = { name }, o.attr = Klick-Attribut, o.footer = Kudos/Kommentare.
  */
-function splitPaces(splits, distanceKm) {
-  const full = Math.floor(distanceKm || splits.length);
-  return splits.map((s, i) => {
-    const part = distanceKm && i === splits.length - 1 && i >= full ? distanceKm - full : 0;
-    return part > 0
-      ? { km: (full + part).toFixed(2), pace: s / part, partial: true }
-      : { km: String(i + 1), pace: s, partial: false };
-  });
+function workoutCard(w, o = {}) {
+  const vol = workoutVolume(w.exercises);
+  const name = o.who?.name;
+  return `<article class="card activity" ${o.attr || `data-workout="${w.id}"`}>
+    ${name ? `<div class="act-top"><div class="avatar sm" aria-hidden="true">${esc(name.charAt(0).toUpperCase())}</div><span class="act-who">${esc(name)}</span></div>` : ''}
+    <div class="act-head"><h3 class="act-title">${esc(w.title)}</h3><span class="act-date">${fmtDateRel(w.date)}</span></div>
+    <div class="act-stats">
+      <div><div class="label">Dauer</div><div class="value">${fmtDur(w.durationSec)}</div></div>
+      <div><div class="label">Volumen</div><div class="value">${vol ? fmtKg(vol) : '–'}</div></div>
+      ${w.prs ? `<div><div class="label">Rekorde</div><div class="value pr-val">${ic('trophy')}${w.prs}</div></div>` : ''}
+    </div>
+    ${o.footer || ''}
+  </article>`;
 }
-
-/* ---------------- Rendering: Feed ---------------- */
-function miniSplits(a) {
-  if (!a.splits || a.splits.length < 2) return '';
-  const paces = splitPaces(a.splits, a.distanceKm).map((x) => x.pace);
-  const max = Math.max(...paces), min = Math.min(...paces);
-  // schnellerer Split = höherer Balken
-  return `<div class="mini-splits">${paces.map((s) => {
-    const h = max === min ? 70 : 30 + ((max - s) / (max - min)) * 70;
-    return `<i class="${s === min ? 'best' : ''}" style="height:${h}%"></i>`;
-  }).join('')}</div>`;
-}
-
-function renderFeed() {
-  const filter = $('#feed-filter').value;
-  const list = state.activities
-    .filter((a) => !filter || a.type === filter)
-    .sort((a, b) => (b.date + (b.createdAt || '')).localeCompare(a.date + (a.createdAt || '')));
-  if (!list.length) {
-    $('#feed').innerHTML = `<div class="card empty"><p>${filter ? 'Keine Aktivitäten dieser Sportart.' : 'Noch keine Aktivitäten.'}</p>
-      <button class="btn primary" data-goto="add">${ic('plus')}Aktivität eintragen</button></div>`;
-    return;
+/** Sätze pro Muskelgruppe als Balken (nur in der Detailansicht) */
+function muscleBar(exercises) {
+  const groups = {};
+  for (const e of exercises) {
+    const g = exInfo(e.exId, e.name).group;
+    groups[g] = (groups[g] || 0) + doneSets(e).length;
   }
-  $('#feed').innerHTML = list.map((a) => {
-    const t = TYPES[a.type] || TYPES.other;
-    const stats = [`<div><div class="label">Zeit</div><div class="value">${fmtDur(a.durationSec)}</div></div>`];
-    if (a.distanceKm) {
-      stats.unshift(`<div><div class="label">Distanz</div><div class="value">${fmtKm(a.distanceKm)} km</div></div>`);
-      stats.push(`<div><div class="label">${paceLabel(a.type)}</div><div class="value">${fmtPace(a.type, a.durationSec / a.distanceKm)}</div></div>`);
-    }
-    if (a.exercises?.length) {
-      const sets = a.exercises.reduce((n, e) => n + e.sets.length, 0);
-      const vol = workoutVolume(a.exercises);
-      stats.push(`<div><div class="label">Sätze</div><div class="value">${sets}</div></div>`);
-      if (vol) stats.push(`<div><div class="label">Volumen</div><div class="value">${fmtKg(vol)}</div></div>`);
-    }
-    if (a.feel) stats.push(`<div><div class="label">Gefühl</div><div class="value">${esc(feelText(a.feel))}</div></div>`);
-    return `<div class="card activity" data-id="${a.id}">
-      <div class="act-top"><div class="act-icon">${ic(t.icon)}</div>
-        <div><div class="act-title">${esc(a.title)}</div><div class="act-meta">${t.name} · ${fmtDate(a.date)}${a.route ? ` · ${ic('pin')}GPS` : ''}</div></div>
-      </div>
-      <div class="act-stats">${stats.join('')}</div>
-      ${miniSplits(a)}
-      ${a.exercises?.length ? `<div class="ex-chips">${a.exercises.map((e) => `<span>${esc(e.name)} ${exerciseShort(e)}</span>`).join('')}</div>` : ''}
+  const total = Object.values(groups).reduce((a, b) => a + b, 0);
+  if (!total) return '';
+  return `<div class="muscle-bar" aria-label="Sätze pro Muskelgruppe">${Object.entries(groups).sort((a, b) => b[1] - a[1])
+    .map(([g, n]) => `<span style="flex:${n}" title="${GROUPS[g]}: ${n} Sätze"><i></i><small>${GROUPS[g]} ${Math.round((n / total) * 100)} %</small></span>`).join('')}</div>`;
+}
+function cardioCard(c) {
+  const t = CARDIO[c.kind] || CARDIO.other;
+  return `<article class="card activity cardio" data-cardio="${c.id}">
+    <div class="act-head"><h3 class="act-title">${ic(t.icon)}${esc(c.title || t.name)}</h3><span class="act-date">${fmtDateRel(c.date)}</span></div>
+    <div class="act-stats">
+      <div><div class="label">Dauer</div><div class="value">${fmtDur(c.durationSec)}</div></div>
+      ${c.distanceKm ? `<div><div class="label">Distanz</div><div class="value">${String(c.distanceKm).replace('.', ',')} km</div></div>` : ''}
+    </div>
+  </article>`;
+}
+/** Einzeilige Zeile für „Letzte Trainings“ */
+function entryRow(a) {
+  const cardio = a.entry !== 'strength';
+  const t = cardio ? (CARDIO[a.kind] || CARDIO.other) : null;
+  const val = cardio ? (a.distanceKm ? `${String(a.distanceKm).replace('.', ',')} km` : fmtDur(a.durationSec)) : fmtKg(workoutVolume(a.exercises));
+  return `<button class="list-row entry-row" ${cardio ? `data-cardio="${a.id}"` : `data-workout="${a.id}"`}>
+    <span><b>${esc(a.title || t?.name || '')}</b><small>${fmtDateRel(a.date)}</small></span>
+    ${!cardio && a.prs ? `<span class="pr-val">${ic('trophy')}${a.prs}</span>` : ''}
+    <span class="entry-val num">${val}</span>${ic('chevron', 'chev')}
+  </button>`;
+}
+function sortedEntries(filter) {
+  return allEntries()
+    .filter((a) => !filter || a.entry === filter)
+    .sort((a, b) => (b.date + (b.createdAt || '')).localeCompare(a.date + (a.createdAt || '')));
+}
+function entryCard(a) { return a.entry === 'strength' ? workoutCard(a) : cardioCard(a); }
+
+const HIST_PAGE = 10;
+let histShown = HIST_PAGE;
+function renderHistory() {
+  const filter = $('#hist-filter').value;
+  const list = sortedEntries(filter);
+  const more = list.length - histShown;
+  $('#history').innerHTML = list.length ? list.slice(0, histShown).map(entryCard).join('')
+      + (more > 0 ? `<button class="btn wide" data-hist-more>Mehr anzeigen</button>` : '')
+    : `<div class="card empty"><p>Noch keine Einträge.</p></div>`;
+}
+
+/* ---------------- Detail-Ansichten ---------------- */
+function openModal(html, cls = '') {
+  const box = $('#modal-box');
+  box.innerHTML = html;
+  box.className = 'modal-box ' + cls;
+  box.style.transform = ''; box.style.transition = ''; box.scrollTop = 0;
+  $('#modal').classList.remove('hidden');
+  document.body.classList.add('modal-open');
+}
+function closeModal() {
+  $('#modal').classList.add('hidden');
+  document.body.classList.remove('modal-open');
+  if (typeof onModalClose === 'function') onModalClose();
+}
+
+function showWorkout(id) {
+  const w = state.workouts.find((x) => x.id === id);
+  if (!w) return;
+  const rows = w.exercises.map((e) => {
+    const b = bestOf(e);
+    return `<div class="wd-ex">
+      <div class="wd-head">${exThumb(e.exId, 'wd-thumb')}<div><b>${esc(e.name)}</b>${TIPS[e.exId] ? ` <button class="link-btn tips-link" data-tips="${esc(e.exId)}">Tipps</button>` : ''}
+        <div class="muted">${GROUPS[exInfo(e.exId, e.name).group]}${b && !b.bw ? ` · 1RM ≈ ${fmtW(Math.round(b.score))} kg` : ''}</div></div></div>
+      <ol class="wd-sets">${doneSets(e).map((s) => `<li class="${s.pr ? 'pr' : ''}"><span class="num">${fmtSet(s)}</span>${s.pr ? `<span class="pr-tag">${ic('trophy')}Rekord</span>` : ''}</li>`).join('')}</ol>
     </div>`;
   }).join('');
+  openModal(`
+    <div class="muted">${fmtDate(w.date)}${w.splitName ? ' · ' + esc(w.splitName) : ''} · ${VISIBILITY[w.visibility] || 'Öffentlich'}</div>
+    <h3>${esc(w.title)}</h3>
+    <div class="act-stats">
+      <div><div class="label">Dauer</div><div class="value">${fmtDur(w.durationSec)}</div></div>
+      <div><div class="label">Volumen</div><div class="value">${fmtKg(workoutVolume(w.exercises))}</div></div>
+      <div><div class="label">Sätze</div><div class="value">${workoutSetCount(w.exercises)}</div></div>
+      ${w.feel ? `<div><div class="label">Gefühl</div><div class="value">${esc(w.feel)}</div></div>` : ''}
+    </div>
+    ${muscleBar(w.exercises)}
+    ${w.notes ? `<p class="notes">${esc(w.notes)}</p>` : ''}
+    <div class="wd-list">${rows}</div>
+    ${typeof user !== 'undefined' && user && !w.demo ? `<div class="social-box" data-social="${user.id}|${w.id}"></div>` : ''}
+    <div class="modal-actions">
+      <button class="btn" data-repeat="${w.id}">${ic('play')}Nochmal machen</button>
+      <button class="btn danger" data-del-workout="${w.id}">${ic('trash')}Löschen</button>
+      <button class="btn" data-close>Schließen</button>
+    </div>`);
+  if (typeof fillSocialBoxes === 'function') fillSocialBoxes();
 }
 
-/* ---------------- Splits & Route ---------------- */
-function splitsTable(type, splits, distanceKm) {
-  if (!splits || !splits.length) return '';
-  const sp = splitPaces(splits, distanceKm);
-  const paces = sp.map((x) => x.pace);
-  const min = Math.min(...paces), max = Math.max(...paces);
-  const avg = paces.reduce((a, b) => a + b, 0) / paces.length;
-  const rows = sp.map(({ km, pace }, i) => {
-    const diff = i ? pace - paces[i - 1] : 0;
-    const w = max === min ? 80 : 35 + ((max - pace) / (max - min)) * 65;
-    return `<tr class="${pace === min && sp.length > 1 ? 'best' : ''}">
-      <td>${km}</td>
-      <td>${fmtPace(type, pace)}</td>
-      <td class="barcell"><div class="sbar" style="width:${w}%"></div></td>
-      <td class="diff ${diff > 0 ? 'up' : diff < 0 ? 'down' : ''}">${i ? (diff > 0 ? '+' : diff < 0 ? '−' : '±') + fmtDur(Math.abs(diff)) : ''}</td>
-    </tr>`;
-  });
-  return `<thead><tr><th>km</th><th>${paceLabel(type).replace('Ø ', '')}</th><th></th><th>±</th></tr></thead><tbody>${rows.join('')}</tbody>
-    <tfoot><tr><td colspan="4" class="muted">Ø ${fmtPace(type, avg)} · Schnellster ${fmtPace(type, min)} · Langsamster ${fmtPace(type, max)}${
-      paces.length > 1 ? ' · ' + splitTrend(paces) : ''}</td></tr></tfoot>`;
-}
-
-/** Negativ-Split, wenn die zweite Hälfte schneller war. */
-function splitTrend(splits) {
-  const h = Math.floor(splits.length / 2);
-  const a = splits.slice(0, h).reduce((x, y) => x + y, 0) / h;
-  const b = splits.slice(-h).reduce((x, y) => x + y, 0) / h;
-  return b < a ? 'Negativ-Split: zweite Hälfte schneller' : 'Positiv-Split: zweite Hälfte langsamer';
-}
-
-function routeSvg(points) {
-  if (!points || points.length < 2) return '';
-  const lats = points.map((p) => p[0]), lons = points.map((p) => p[1]);
-  const minLat = Math.min(...lats), maxLat = Math.max(...lats);
-  const minLon = Math.min(...lons), maxLon = Math.max(...lons);
-  const k = Math.cos(((minLat + maxLat) / 2) * Math.PI / 180);
-  const w = Math.max((maxLon - minLon) * k, 1e-6), h = Math.max(maxLat - minLat, 1e-6);
-  const scale = Math.min(280 / w, 180 / h);
-  const ox = (300 - w * scale) / 2, oy = (200 - h * scale) / 2;
-  const xy = points.map(([la, lo]) => [ox + (lo - minLon) * k * scale, oy + (maxLat - la) * scale]);
-  const pts = xy.map((p) => p.map((v) => v.toFixed(1)).join(',')).join(' ');
-  const [s, e] = [xy[0], xy[xy.length - 1]];
-  return `<polyline points="${pts}"/><circle class="s" cx="${s[0]}" cy="${s[1]}" r="5"/><circle class="e" cx="${e[0]}" cy="${e[1]}" r="5"/>`;
-}
-
-/* ---------------- Modals ---------------- */
-function openModal(html) {
-  $('#modal-box').innerHTML = html;
-  $('#modal').classList.remove('hidden');
-}
-function closeModal() { $('#modal').classList.add('hidden'); }
-
-function showActivity(id) {
-  const a = state.activities.find((x) => x.id === id);
-  if (!a) return;
-  const t = TYPES[a.type] || TYPES.other;
-  const pace = a.distanceKm ? `<div><div class="label">${paceLabel(a.type)}</div><div class="value">${fmtPace(a.type, a.durationSec / a.distanceKm)}</div></div>` : '';
+function showCardio(id) {
+  const c = state.cardio.find((x) => x.id === id);
+  if (!c) return;
+  const t = CARDIO[c.kind] || CARDIO.other;
   openModal(`
     <div class="act-top"><div class="act-icon">${ic(t.icon)}</div>
-      <div><h3>${esc(a.title)}</h3><div class="act-meta">${t.name} · ${fmtDate(a.date)}</div></div></div>
+      <div><h3>${esc(c.title || t.name)}</h3><div class="act-meta">${fmtDate(c.date)} · Cardio</div></div></div>
     <div class="act-stats">
-      ${a.distanceKm ? `<div><div class="label">Distanz</div><div class="value">${fmtKm(a.distanceKm)} km</div></div>` : ''}
-      <div><div class="label">Zeit</div><div class="value">${fmtDur(a.durationSec)}</div></div>
-      ${pace}
-      ${a.feel ? `<div><div class="label">Gefühl</div><div class="value">${esc(feelText(a.feel))}</div></div>` : ''}
+      <div><div class="label">Dauer</div><div class="value">${fmtDur(c.durationSec)}</div></div>
+      ${c.distanceKm ? `<div><div class="label">Distanz</div><div class="value">${String(c.distanceKm).replace('.', ',')} km</div></div>` : ''}
     </div>
-    ${a.notes ? `<p>${esc(a.notes)}</p>` : ''}
-    ${a.route ? `<svg class="route" viewBox="0 0 300 200">${routeSvg(a.route)}</svg>` : ''}
-    ${a.exercises?.length ? exercisesTable(a.exercises) : ''}
-    ${a.splits?.length ? `<h3 style="margin-top:14px">Splits</h3><table class="splits">${splitsTable(a.type, a.splits, a.distanceKm)}</table>` : ''}
+    ${c.notes ? `<p class="notes">${esc(c.notes)}</p>` : ''}
     <div class="modal-actions">
-      <button class="btn" data-edit="${a.id}">${ic('edit')}Bearbeiten</button>
-      <button class="btn danger" data-del="${a.id}">${ic('trash')}Löschen</button>
+      <button class="btn" data-edit-cardio="${c.id}">${ic('edit')}Bearbeiten</button>
+      <button class="btn danger" data-del-cardio="${c.id}">${ic('trash')}Löschen</button>
       <button class="btn" data-close>Schließen</button>
     </div>`);
 }
 
 function showDay(k) {
-  const list = state.activities.filter((a) => a.date === k);
+  const list = allEntries().filter((a) => a.date === k);
   const mark = state.marks[k];
   const isFuture = k > ymd(today());
   openModal(`
     <h3>${fmtDate(k)}</h3>
-    <p class="muted">${list.length ? `${list.length} ${list.length === 1 ? 'Aktivität' : 'Aktivitäten'}` : mark === 'rest' ? 'Ruhetag – hält deine Streak' : mark === 'skip' ? 'Skip – ausgelassen' : 'Kein Eintrag'}</p>
-    ${list.length ? `<div class="day-list">${list.map((a) => `<div class="day-item" data-id="${a.id}">
-      ${ic(TYPES[a.type]?.icon || 'bolt')}<span><b>${esc(a.title)}</b> · ${fmtDur(a.durationSec)}${a.distanceKm ? ' · ' + fmtKm(a.distanceKm) + ' km' : ''}</span></div>`).join('')}</div>` : ''}
+    <p class="muted">${list.length ? `${list.length} ${list.length === 1 ? 'Einheit' : 'Einheiten'}` : mark === 'rest' ? 'Ruhetag – hält deine Streak' : mark === 'skip' ? 'Skip – ausgelassen' : 'Kein Eintrag'}</p>
+    ${list.length ? `<div class="day-list">${list.map((a) => `<div class="day-item" ${a.entry === 'strength' ? `data-workout="${a.id}"` : `data-cardio="${a.id}"`}>
+      ${ic(a.entry === 'strength' ? 'dumbbell' : (CARDIO[a.kind]?.icon || 'bolt'))}<span><b>${esc(a.title)}</b> · ${fmtDur(a.durationSec)}</span></div>`).join('')}</div>` : ''}
     <div class="modal-actions">
-      ${isFuture ? '' : `<button class="btn primary" data-add-day="${k}">${ic('plus')}Aktivität eintragen</button>`}
+      ${isFuture ? '' : `<button class="btn" data-cardio-day="${k}">${ic('plus')}Cardio eintragen</button>`}
       ${list.length ? '' : `
         <button class="btn" data-mark="${k}:rest">${ic('moon')}Als Ruhetag markieren</button>
         <button class="btn" data-mark="${k}:skip">${ic('skip')}Als Skip markieren</button>
@@ -484,299 +464,114 @@ function showDay(k) {
     </div>`);
 }
 
-/* ---------------- Formular ---------------- */
-function fillTypeSelects() {
-  const opts = Object.entries(TYPES).map(([k, t]) => `<option value="${k}">${t.name}</option>`).join('');
-  $('#add-type').innerHTML = opts;
-  $('#rec-type').innerHTML = Object.entries(TYPES).filter(([, t]) => t.distance)
-    .map(([k, t]) => `<option value="${k}">${t.name}</option>`).join('');
-  $('#heat-filter').innerHTML += opts;
-  $('#feed-filter').innerHTML += opts;
+/* ---------------- Cardio eintragen ---------------- */
+function cardioForm(c, date) {
+  openModal(`
+    <form class="form" id="cardio-form">
+      <h3>${c ? 'Cardio bearbeiten' : 'Cardio eintragen'}</h3>
+      <input type="hidden" name="id" value="${c ? c.id : ''}" />
+      <label>Art <select name="kind">${Object.entries(CARDIO).map(([k, t]) => `<option value="${k}"${c?.kind === k ? ' selected' : ''}>${t.name}</option>`).join('')}</select></label>
+      <div class="row">
+        <label>Datum <input type="date" name="date" required value="${c ? c.date : date || ymd(today())}" max="${ymd(today())}" /></label>
+        <label>Dauer (min oder h:mm:ss) <input name="duration" required inputmode="numeric" placeholder="30" value="${c ? fmtDur(c.durationSec) : ''}" /></label>
+      </div>
+      <label>Distanz in km (optional) <input name="distance" type="number" step="0.01" min="0" inputmode="decimal" value="${c?.distanceKm || ''}" /></label>
+      <label>Notizen <textarea name="notes" rows="2" placeholder="z. B. lockeres Auslaufen">${esc(c?.notes || '')}</textarea></label>
+      <div class="form-actions">
+        <button class="btn primary" type="submit">${ic('check')}Speichern</button>
+        <button class="btn" type="button" data-close>Abbrechen</button>
+      </div>
+    </form>`);
 }
-
-function updateDistFields() {
-  const hasDist = TYPES[$('#add-type').value]?.distance;
-  $$('.dist-field').forEach((el) => el.classList.toggle('hidden', !hasDist));
-}
-
-function resetForm(date) {
-  const f = $('#add-form');
-  f.reset();
-  f.id.value = '';
-  f.date.value = date || ymd(today());
-  $('#form-title').textContent = 'Aktivität eintragen';
-  updateDistFields();
-}
-
-function editActivity(id) {
-  const a = state.activities.find((x) => x.id === id);
-  if (!a) return;
-  const f = $('#add-form');
-  f.id.value = a.id;
-  f.type.value = a.type;
-  f.title.value = a.title;
-  f.date.value = a.date;
-  f.duration.value = fmtDur(a.durationSec);
-  f.distance.value = a.distanceKm || '';
-  f.feel.value = a.feel || '';
-  f.splits.value = (a.splits || []).map(fmtDur).join(', ');
-  f.notes.value = a.notes || '';
-  $('#form-title').textContent = 'Aktivität bearbeiten';
-  updateDistFields();
-  closeModal();
-  showView('add');
-}
-
-function defaultTitle(type, date) {
-  const h = new Date().getHours();
-  const part = h < 11 ? 'Morgen' : h < 14 ? 'Mittags' : h < 18 ? 'Nachmittags' : 'Abend';
-  const n = TYPES[type]?.name || 'Training';
-  return date === ymd(today()) ? `${part}-${n}` : n;
-}
-
-function onSubmit(e) {
-  e.preventDefault();
-  const f = e.target;
+function onCardioSubmit(f) {
   const durationSec = parseDur(f.duration.value);
   if (!durationSec || durationSec <= 0) return toast('Bitte eine gültige Dauer angeben');
-  const type = f.type.value;
-  const hasDist = TYPES[type].distance;
-  const distanceKm = hasDist ? parseFloat(f.distance.value) || 0 : 0;
-  let splits = [];
-  if (hasDist && f.splits.value.trim()) {
-    splits = f.splits.value.split(/[,;\s]+/).filter(Boolean).map(parseDur);
-    if (splits.some((s) => !s || s <= 0)) return toast('Splits bitte als mm:ss, z.B. 5:12, 5:05');
-  }
-  const existing = state.activities.find((x) => x.id === f.id.value);
-  const a = {
-    ...(existing || {}),
-    id: existing?.id || uid(),
-    type,
-    title: f.title.value.trim() || defaultTitle(type, f.date.value),
-    date: f.date.value,
-    durationSec,
-    distanceKm,
-    splits,
-    feel: f.feel.value,
-    notes: f.notes.value.trim(),
-    createdAt: existing?.createdAt || new Date().toISOString(),
+  const existing = state.cardio.find((x) => x.id === f.id.value);
+  const c = {
+    id: existing?.id || uid(), kind: f.kind.value, title: CARDIO[f.kind.value].name,
+    date: f.date.value, durationSec, distanceKm: parseFloat(f.distance.value) || 0,
+    notes: f.notes.value.trim(), createdAt: existing?.createdAt || new Date().toISOString(),
   };
-  if (existing) Object.assign(existing, a);
-  else state.activities.push(a);
-  delete state.marks[a.date]; // Ein Tag mit Aktivität ist kein Skip/Ruhetag mehr
+  if (existing) Object.assign(existing, c); else state.cardio.push(c);
+  delete state.marks[c.date];
   save();
-  toast(existing ? 'Aktivität aktualisiert' : 'Aktivität gespeichert');
-  resetForm();
-  showView('feed');
-}
-
-/* ---------------- GPS-Aufzeichnung ---------------- */
-const rec = { running: false, paused: false, startTs: 0, elapsed: 0, dist: 0, last: null, points: [], splits: [], splitStartSec: 0, watch: null, timer: null };
-
-function haversine(a, b) {
-  const R = 6371, toR = Math.PI / 180;
-  const dLat = (b[0] - a[0]) * toR, dLon = (b[1] - a[1]) * toR;
-  const h = Math.sin(dLat / 2) ** 2 + Math.cos(a[0] * toR) * Math.cos(b[0] * toR) * Math.sin(dLon / 2) ** 2;
-  return 2 * R * Math.asin(Math.sqrt(h));
-}
-function recElapsed() { return rec.elapsed + (rec.running && !rec.paused ? (Date.now() - rec.startTs) / 1000 : 0); }
-
-function recUpdateUi() {
-  const sec = recElapsed();
-  const type = $('#rec-type').value;
-  const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s = Math.floor(sec % 60);
-  $('#rec-time').textContent = [h, m, s].map((v) => String(v).padStart(2, '0')).join(':');
-  $('#rec-dist').textContent = rec.dist.toFixed(2);
-  $('#rec-pace-label').textContent = paceLabel(type) + (TYPES[type].pace === 'speed' ? '' : ' /km');
-  $('#rec-pace').textContent = rec.dist > 0.02 ? fmtPace(type, sec / rec.dist).replace(/ \/(km|100m)$/, '') : '–';
-  const partKm = rec.dist - rec.splits.length;
-  $('#rec-split').textContent = partKm > 0.02 ? fmtPace(type, (sec - rec.splitStartSec) / partKm).replace(/ \/(km|100m)$/, '') : '–';
-}
-
-function onPosition(pos) {
-  const { latitude, longitude, accuracy } = pos.coords;
-  $('#rec-gps').textContent = `GPS: ±${Math.round(accuracy)} m`;
-  if (!rec.running || rec.paused || accuracy > 50) return; // ungenaue Punkte ignorieren
-  const p = [latitude, longitude];
-  if (rec.last) {
-    const d = haversine(rec.last, p);
-    if (d < 0.003) return; // < 3 m: Rauschen
-    rec.dist += d;
-  }
-  rec.last = p;
-  rec.points.push(p);
-  // km-Split abschließen
-  while (rec.dist >= rec.splits.length + 1) {
-    const now = recElapsed();
-    rec.splits.push(Math.round(now - rec.splitStartSec));
-    rec.splitStartSec = now;
-    toast(`km ${rec.splits.length}: ${fmtDur(rec.splits[rec.splits.length - 1])}`);
-    if (navigator.vibrate) navigator.vibrate(200);
-  }
-  $('#rec-route').innerHTML = routeSvg(rec.points);
-  $('#rec-splits').innerHTML = splitsTable($('#rec-type').value, rec.splits);
-  recUpdateUi();
-  recPersist();
-}
-
-/* Laufende Aufzeichnung sichern, damit sie ein Neuladen / Schließen der App übersteht */
-const REC_KEY = 'pulse.rec';
-function recPersist() {
-  try {
-    if (!rec.running) return localStorage.removeItem(REC_KEY);
-    const { watch, timer, ...data } = rec;
-    localStorage.setItem(REC_KEY, JSON.stringify({ ...data, type: $('#rec-type').value }));
-  } catch (e) { /* ignore */ }
-}
-
-/* Bildschirm während der Aufzeichnung anlassen (sonst stoppt das GPS im Browser) */
-let wakeLock = null;
-async function recWakeLock(on) {
-  try {
-    if (on && !wakeLock && 'wakeLock' in navigator) {
-      wakeLock = await navigator.wakeLock.request('screen');
-      wakeLock.addEventListener('release', () => { wakeLock = null; });
-    } else if (!on && wakeLock) {
-      await wakeLock.release();
-      wakeLock = null;
-    }
-  } catch (e) { /* z.B. Akku-Sparmodus */ }
-}
-document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible' && rec.running && !rec.paused) recWakeLock(true);
-});
-window.addEventListener('beforeunload', (e) => {
-  if (rec.running) { recPersist(); e.preventDefault(); e.returnValue = ''; }
-});
-
-function recButtons() {
-  const active = rec.running && !rec.paused;
-  $('#rec-start span').textContent = rec.running ? 'Aufzeichnung fortsetzen' : 'Aufzeichnung starten';
-  $('#rec-start').classList.toggle('hidden', active);
-  $('#rec-pause').classList.toggle('hidden', !active);
-  $('#rec-stop').classList.toggle('hidden', !rec.running);
-  $('#rec-type').disabled = rec.running;
-  document.body.classList.toggle('recording', rec.running);
-}
-
-function recAttach() {
-  rec.watch = navigator.geolocation.watchPosition(onPosition,
-    (err) => { $('#rec-gps').textContent = 'GPS-Fehler: ' + (err.code === 1 ? 'Standortzugriff nicht erlaubt' : err.message); },
-    { enableHighAccuracy: true, maximumAge: 1000, timeout: 20000 });
-  clearInterval(rec.timer);
-  rec.timer = setInterval(recUpdateUi, 500);
-}
-
-function recStart() {
-  if (!navigator.geolocation) return toast('GPS wird von diesem Gerät nicht unterstützt');
-  if (!rec.running) {
-    Object.assign(rec, { running: true, paused: false, elapsed: 0, dist: 0, last: null, points: [], splits: [], splitStartSec: 0 });
-    $('#rec-route').innerHTML = '';
-    $('#rec-splits').innerHTML = '';
-    recAttach();
-  } else {
-    rec.paused = false;
-    rec.last = null; // nach Pause keine "Sprung"-Distanz zählen
-  }
-  rec.startTs = Date.now();
-  recWakeLock(true);
-  recButtons();
-  recPersist();
-}
-function recPause() {
-  rec.elapsed = recElapsed();
-  rec.paused = true;
-  recWakeLock(false);
-  recButtons();
-  recPersist();
-}
-function recRestore() {
-  let d;
-  try { d = JSON.parse(localStorage.getItem(REC_KEY)); } catch (e) { return; }
-  if (!d || !d.running || !navigator.geolocation) return;
-  Object.assign(rec, d, { last: null });
-  if (TYPES[d.type]) $('#rec-type').value = d.type;
-  recAttach();
-  $('#rec-route').innerHTML = routeSvg(rec.points);
-  $('#rec-splits').innerHTML = splitsTable(d.type, rec.splits);
-  if (!rec.paused) recWakeLock(true);
-  recButtons();
-  recUpdateUi();
-  showView('record');
-  toast('Aufzeichnung wird fortgesetzt');
-}
-function recStop() {
-  if (!confirm('Aufzeichnung beenden und speichern?')) return;
-  const sec = recElapsed();
-  navigator.geolocation.clearWatch(rec.watch);
-  clearInterval(rec.timer);
-  rec.running = false;
-  recWakeLock(false);
-  recPersist();
-  recButtons();
-  const type = $('#rec-type').value;
-  if (sec < 10) return toast('Zu kurz – nicht gespeichert');
-  // Rest-Split (angefangener km)
-  const splits = [...rec.splits];
-  if (rec.dist - splits.length > 0.05) splits.push(Math.round(sec - rec.splitStartSec));
-  const date = ymd(today());
-  // Route ausdünnen, damit localStorage nicht überläuft
-  const step = Math.max(1, Math.ceil(rec.points.length / 500));
-  const a = {
-    id: uid(), type, date, title: defaultTitle(type, date), durationSec: Math.round(sec),
-    distanceKm: +rec.dist.toFixed(2), splits, feel: '', notes: '',
-    route: rec.points.length > 1 ? rec.points.filter((_, i) => i % step === 0 || i === rec.points.length - 1) : undefined,
-    createdAt: new Date().toISOString(),
-  };
-  state.activities.push(a);
-  delete state.marks[date];
-  save();
-  toast('Aufzeichnung gespeichert');
-  recUpdateUi();
-  showView('feed');
-  showActivity(a.id);
+  closeModal();
+  toast(existing ? 'Gespeichert' : 'Cardio eingetragen');
+  renderCurrent();
 }
 
 /* ---------------- Demo / Import / Export ---------------- */
+/**
+ * Beispieldaten: 16 Wochen Push/Pull/Legs mit echter Progression
+ * (Gewichte steigen langsam, ab und zu ein schlechter Tag), dazu etwas Cardio.
+ */
 function loadDemo() {
-  if (state.activities.length && !confirm('Beispieldaten zu deinen bestehenden Daten hinzufügen?')) return;
+  if ((state.workouts.length || state.cardio.length) && !confirm('Beispieldaten zu deinen bestehenden Daten hinzufügen?')) return;
   const rnd = (a, b) => a + Math.random() * (b - a);
+  const round = (x) => Math.round(x / 2.5) * 2.5;
+  const split = cloneSplit(TEMPLATES[0], { source: { templateId: 'tpl-ppl' }, demo: true });
+  state.splits.push(split);
+  state.activeSplitId = split.id;
+  const start = { bench: 55, ohp: 35, incline: 40, lateral: 7, triceps: 20, deadlift: 85, pullup: 0, row: 50, facepull: 15, curl: 10,
+    squat: 65, rdl: 60, legpress: 110, legcurl: 30, calf: 40 };
+  const weekly = { bench: 0.9, ohp: 0.45, incline: 0.7, lateral: 0.08, triceps: 0.35, deadlift: 1.6, row: 0.8, facepull: 0.2, curl: 0.15,
+    squat: 1.4, rdl: 1.1, legpress: 2.2, legcurl: 0.5, calf: 0.8 };
+  let dayIdx = 0;
   const t = today();
-  for (let i = 300; i >= 0; i--) {
+  for (let i = 16 * 7; i >= 1; i--) {
     const d = addDays(t, -i);
     const k = ymd(d);
-    const r = Math.random();
     const wd = d.getDay();
-    if (r < 0.08) { state.marks[k] = 'skip'; continue; }
-    if (wd === 1 && r < 0.6) { state.marks[k] = 'rest'; continue; }
-    if (r < 0.3) continue;
-    const type = r < 0.6 ? 'run' : r < 0.75 ? 'ride' : r < 0.87 ? 'gym' : r < 0.93 ? 'yoga' : r < 0.97 ? 'swim' : 'hike';
-    let distanceKm = 0, durationSec, splits = [];
-    if (type === 'run') {
-      distanceKm = +(wd === 0 ? rnd(12, 22) : rnd(4, 11)).toFixed(2);
-      const base = rnd(285, 340) - (300 - i) * 0.05; // langsam schneller werden
-      for (let km = 0; km < Math.floor(distanceKm); km++) splits.push(Math.round(base + rnd(-12, 12) - km * 0.6));
-      const rest = distanceKm - Math.floor(distanceKm);
-      if (rest > 0.05) splits.push(Math.round(base * rest));
-      durationSec = splits.reduce((x, y) => x + y, 0);
-    } else if (type === 'ride') {
-      distanceKm = +rnd(20, 75).toFixed(2); durationSec = Math.round((distanceKm / rnd(22, 30)) * 3600);
-    } else if (type === 'swim') {
-      distanceKm = +rnd(1, 3).toFixed(2); durationSec = Math.round(distanceKm * rnd(1100, 1400));
-    } else if (type === 'hike') {
-      distanceKm = +rnd(8, 18).toFixed(2); durationSec = Math.round(distanceKm * rnd(700, 900));
-    } else {
-      durationSec = Math.round(rnd(30, 75)) * 60;
+    const week = (16 * 7 - i) / 7;
+    if (wd === 0) { if (Math.random() < 0.7) state.marks[k] = 'rest'; continue; }
+    if (Math.random() < 0.12) { state.marks[k] = 'skip'; continue; }
+    if (wd === 3 && Math.random() < 0.5) {
+      state.cardio.push({ id: uid(), kind: 'run', title: 'Laufen', date: k, durationSec: Math.round(rnd(22, 40)) * 60,
+        distanceKm: +rnd(4, 7).toFixed(1), notes: '', createdAt: d.toISOString(), demo: true });
+      continue;
     }
-    state.activities.push({
-      id: uid(), type, date: k, title: defaultTitle(type, '') + (type === 'run' && wd === 0 ? ' – Long Run' : ''),
-      durationSec, distanceKm, splits, feel: '', notes: '', createdAt: d.toISOString(), demo: true,
+    const day = split.days[dayIdx % 3];
+    dayIdx++;
+    const bad = Math.random() < 0.1;
+    const exercises = day.exercises.map((e) => {
+      const base = e.exId === 'pullup' ? 0 : round(start[e.exId] + weekly[e.exId] * week * (bad ? 0.9 : 1));
+      const sets = [];
+      for (let s = 0; s < e.sets; s++) {
+        const reps = Math.max(e.repsMin - 1, Math.round(e.repsMax - s * rnd(0.3, 1.2) - (bad ? 1 : 0)));
+        sets.push({ weight: base, reps: e.exId === 'pullup' ? Math.round(5 + week * 0.3 - s) : reps });
+      }
+      return { exId: e.exId, name: e.name, sets };
+    });
+    state.workouts.push({
+      id: uid(), date: k, title: day.name, splitId: split.id, dayId: day.id, splitName: split.name,
+      durationSec: Math.round(rnd(48, 75)) * 60, exercises, feel: '', notes: '', visibility: 'public',
+      createdAt: new Date(d.getTime() + 18 * 3600e3).toISOString(), demo: true,
     });
   }
+  markAllPRs();
   save();
-  renderAll();
   toast('Beispieldaten geladen');
-  showView('dashboard');
+  showView('train');
+}
+
+/** Rekorde für alle Trainings neu berechnen (nach Import, Demo, Löschen) */
+function markAllPRs() {
+  const best = {};
+  const list = [...state.workouts].sort((a, b) => (a.date + a.createdAt).localeCompare(b.date + b.createdAt));
+  for (const w of list) {
+    let n = 0;
+    for (const e of w.exercises) {
+      for (const s of e.sets) {
+        delete s.pr;
+        if (!(s.reps > 0)) continue;
+        const score = s.weight ? e1rm(s.weight, s.reps) : s.reps;
+        const key = e.exId + (s.weight ? '' : ':bw');
+        if (best[key] !== undefined && score > best[key] + 0.01) { s.pr = true; n++; }
+        if (best[key] === undefined || score > best[key]) best[key] = score;
+      }
+    }
+    w.prs = n;
+  }
 }
 
 function exportData() {
@@ -792,77 +587,210 @@ function importData(file) {
   r.onload = () => {
     try {
       const d = JSON.parse(r.result);
-      if (!Array.isArray(d.activities)) throw new Error();
-      state = { activities: d.activities, marks: d.marks || {} };
-      save(); renderAll(); toast('Import erfolgreich');
+      if (d.version === 2 && Array.isArray(d.workouts)) { const sync = state.sync; state = { ...blankState(), ...d, sync }; }
+      else if (Array.isArray(d.activities)) {
+        // Backup der alten Lauf-App
+        localStorage.setItem(OLD_KEY, JSON.stringify(d));
+        const sync = state.sync;
+        state = migrate();
+        state.sync = sync;
+      } else throw new Error();
+      markAllPRs();
+      save(); toast('Import erfolgreich'); renderCurrent();
     } catch { toast('Ungültige Datei'); }
   };
   r.readAsText(file);
 }
 
-/* ---------------- Navigation & Events ---------------- */
+/* ---------------- Navigation ---------------- */
+let currentView = 'train';
+const VIEWS = ['train', 'feed', 'habits', 'splits', 'discover', 'progress', 'profile', 'split-edit'];
+const VIEW_TITLES = { train: 'Training', feed: 'Feed', habits: 'Habits', splits: 'Splits', discover: 'Entdecken', progress: 'Fortschritt', profile: 'Profil', 'split-edit': 'Split' };
+const PUSHED = { 'split-edit': 'splits', discover: 'splits' }; // Unterseiten: Zurück führt zu diesem Tab
+const scrollMemory = {};
+
 function showView(v) {
+  if (!VIEWS.includes(v)) v = 'train';
+  const same = v === currentView;
+  if (!same) scrollMemory[currentView] = window.scrollY;
+  currentView = v;
   $$('.view').forEach((el) => el.classList.toggle('active', el.id === 'view-' + v));
-  $$('#tabs button').forEach((b) => b.classList.toggle('active', b.dataset.view === v));
-  if (v === 'dashboard') renderDashboard();
-  if (v === 'feed') renderFeed();
-  window.scrollTo(0, 0);
+  const tab = PUSHED[v] || v;
+  $$('#tabs button').forEach((b) => {
+    b.classList.toggle('active', b.dataset.view === tab);
+    if (b.dataset.view === tab) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
+  });
+  $('#nav-title').textContent = v === 'split-edit' ? $('#se-title').textContent : VIEW_TITLES[v] || '';
+  $('#nav-back').classList.toggle('hidden', !PUSHED[v]);
+  document.body.classList.toggle('pushed', !!PUSHED[v]);
+  renderCurrent();
+  if (!same) window.scrollTo(0, PUSHED[v] ? 0 : scrollMemory[v] || 0);
+  onScroll();
 }
-function renderAll() { renderDashboard(); renderFeed(); }
+// 3D-Figuren laden asynchron: danach Vorschaubilder der aktuellen Ansicht neu zeichnen
+window.addEventListener('model3d-ready', () => { if (state) renderCurrent(); });
+function onScroll() { document.body.classList.toggle('scrolled', window.scrollY > 36); }
+
+/* ---------------- Filter-Chips (ersetzen Auswahlfelder) ---------------- */
+function buildChips() {
+  $$('.chips[data-for]').forEach((box) => {
+    const sel = document.getElementById(box.dataset.for);
+    box.innerHTML = [...sel.options].map((o) =>
+      `<button type="button" data-chip="${o.value}" aria-pressed="${o.value === sel.value}">${esc(o.text)}</button>`).join('');
+    box.addEventListener('click', (e) => {
+      const b = e.target.closest('[data-chip]');
+      if (!b) return;
+      sel.value = b.dataset.chip;
+      box.querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', x === b));
+      sel.dispatchEvent(new Event('change'));
+    });
+  });
+}
+
+/* ---------------- Profil: App-Icon ---------------- */
+const APP_ICONS = { blau: 'Blau', hellblau: 'Hellblau', rot: 'Rot' };
+function renderIconPick() {
+  const c = document.documentElement.dataset.color || 'blau';
+  $('#color-pick').innerHTML = Object.entries(APP_ICONS).map(([k, name]) =>
+    `<button class="color-opt" role="radio" aria-checked="${k === c}" data-color="${k}">
+      <img src="icons/${k}/icon-192.png" alt="" width="60" height="60" /><span>${name}</span></button>`).join('');
+  const standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+  $('#color-hint').textContent = standalone
+    ? 'Für das neue Icon auf dem Home-Bildschirm: Pulse dort entfernen und über Teilen → „Zum Home-Bildschirm“ neu hinzufügen. Deine Daten bleiben erhalten.'
+    : 'Dieses Icon bekommt Pulse, wenn du es zum Home-Bildschirm hinzufügst.';
+}
+function setAppIcon(c) {
+  if (!APP_ICONS[c]) return;
+  document.documentElement.dataset.color = c;
+  try { localStorage.setItem('pulse.color', c); } catch (e) { /* ignore */ }
+  $('#l-manifest').href = `manifest-${c}.json`;
+  $('#l-favicon').href = `icons/${c}/favicon-32.png`;
+  $('#l-touch').href = `icons/${c}/apple-touch-icon.png`;
+  $('#install-icon').src = `icons/${c}/icon-192.png`;
+  haptic();
+  renderIconPick();
+}
+function haptic() { try { navigator.vibrate && navigator.vibrate(8); } catch (e) { /* ignore */ } }
+
+/* ---------------- Bottom-Sheet nach unten wegwischen ---------------- */
+function setupSheetSwipe() {
+  const box = $('#modal-box');
+  let y0 = null, dy = 0;
+  box.addEventListener('touchstart', (e) => {
+    y0 = box.scrollTop <= 0 && !e.target.closest('input, textarea, select') ? e.touches[0].clientY : null; dy = 0;
+  }, { passive: true });
+  box.addEventListener('touchmove', (e) => {
+    if (y0 === null) return;
+    dy = Math.max(0, e.touches[0].clientY - y0);
+    if (dy > 0) { box.style.transition = 'none'; box.style.transform = `translateY(${dy}px)`; }
+  }, { passive: true });
+  box.addEventListener('touchend', () => {
+    if (y0 === null) return;
+    box.style.transition = 'transform 220ms cubic-bezier(.22, 1, .36, 1)';
+    if (dy > 110) { box.style.transform = 'translateY(100%)'; setTimeout(closeModal, 180); }
+    else box.style.transform = '';
+    y0 = null;
+  });
+}
+
+function renderCurrent() {
+  if (currentView === 'train') renderTrain();
+  if (currentView === 'splits') renderSplits();
+  if (currentView === 'feed' && typeof renderFeedView === 'function') renderFeedView();
+  if (currentView === 'progress') renderProgress();
+  if (currentView === 'discover') renderDiscoverView();
+  if (currentView === 'profile') renderProfile();
+  if (currentView === 'habits' && typeof renderHabits === 'function') renderHabits();
+}
 
 function setMark(k, value) {
   if (value) state.marks[k] = value; else delete state.marks[k];
   save();
-  renderDashboard();
+  renderCurrent();
 }
 
 document.addEventListener('click', (e) => {
-  const el = e.target.closest('[data-view],[data-goto],[data-day],[data-id],[data-edit],[data-del],[data-close],[data-mark],[data-add-day],[data-p]');
   if (e.target.id === 'modal') return closeModal();
-  if (e.target.closest('[data-demo]')) return loadDemo();
+  const ico = e.target.closest('.color-opt');
+  if (ico) return setAppIcon(ico.dataset.color);
+  const el = e.target.closest('[data-view],[data-day],[data-workout],[data-cardio],[data-close],[data-mark],[data-cardio-day],[data-p],[data-del-workout],[data-del-cardio],[data-edit-cardio],[data-repeat],[data-demo],[data-new-cardio],[data-hist-more]');
   if (!el) return;
   const ds = el.dataset;
-  if (ds.view) showView(ds.view);
-  else if (ds.goto) showView(ds.goto);
+  if (ds.view) {
+    haptic();
+    // Erneutes Tippen auf den aktiven Tab scrollt nach oben
+    if (el.closest('#tabs') && ds.view === currentView) window.scrollTo({ top: 0, behavior: 'smooth' });
+    else showView(ds.view);
+  }
+  else if (ds.demo !== undefined) loadDemo();
+  else if (ds.newCardio !== undefined) cardioForm(null);
   else if (ds.day) showDay(ds.day);
-  else if (ds.edit) editActivity(ds.edit);
-  else if (ds.del) {
-    if (!confirm('Aktivität wirklich löschen?')) return;
-    state.activities = state.activities.filter((a) => a.id !== ds.del);
-    save(); closeModal(); renderAll();
-  } else if (ds.close !== undefined) closeModal();
+  else if (ds.workout) showWorkout(ds.workout);
+  else if (ds.cardio) showCardio(ds.cardio);
+  else if (ds.histMore !== undefined) { histShown += HIST_PAGE; renderHistory(); }
+  else if (ds.close !== undefined) closeModal();
   else if (ds.mark !== undefined) { const [k, v] = ds.mark.split(':'); setMark(k, v); closeModal(); }
-  else if (ds.addDay) { closeModal(); resetForm(ds.addDay); showView('add'); }
+  else if (ds.cardioDay) cardioForm(null, ds.cardioDay);
+  else if (ds.editCardio) cardioForm(state.cardio.find((c) => c.id === ds.editCardio));
+  else if (ds.delWorkout) {
+    if (!confirm('Training wirklich löschen?')) return;
+    state.workouts = state.workouts.filter((w) => w.id !== ds.delWorkout);
+    markAllPRs(); save(); closeModal(); renderCurrent();
+  } else if (ds.delCardio) {
+    if (!confirm('Eintrag wirklich löschen?')) return;
+    state.cardio = state.cardio.filter((c) => c.id !== ds.delCardio);
+    save(); closeModal(); renderCurrent();
+  } else if (ds.repeat) { closeModal(); repeatWorkout(ds.repeat); }
   else if (ds.p) {
     period = ds.p;
     $$('#period-seg button').forEach((b) => b.classList.toggle('active', b === el));
     renderTotals();
-  } else if (ds.id) showActivity(ds.id);
+  }
 });
-document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
+document.addEventListener('submit', (e) => {
+  if (e.target.getAttribute('id') === 'cardio-form') { e.preventDefault(); onCardioSubmit(e.target); }
+});
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('#modal').classList.contains('hidden')) closeModal(); });
 
 function init() {
-  fillTypeSelects();
-  resetForm();
-  $('#add-type').addEventListener('change', updateDistFields);
-  $('#add-form').addEventListener('submit', onSubmit);
-  $('#add-cancel').addEventListener('click', () => { resetForm(); showView('feed'); });
+  state = load();
   $('#heat-filter').addEventListener('change', renderHeatmap);
-  $('#feed-filter').addEventListener('change', renderFeed);
-  $('#rec-start').addEventListener('click', recStart);
-  $('#rec-pause').addEventListener('click', recPause);
-  $('#rec-stop').addEventListener('click', recStop);
-  $('#rec-type').addEventListener('change', recUpdateUi);
+  $('#hist-filter').addEventListener('change', () => { histShown = HIST_PAGE; renderHistory(); });
+  $('#pf-vis').addEventListener('change', (e) => { state.profile.visibility = e.target.value; save(); toast('Gespeichert'); });
+  $('#pf-edit').addEventListener('click', () => {
+    const n = prompt('Wie sollen andere dich sehen? (Name)', state.profile.name || '');
+    if (n === null) return;
+    state.profile.name = n.trim().slice(0, 40);
+    save(); renderProfile();
+  });
+  for (const k of ['sound', 'voice', 'vibrate', 'autoRest']) {
+    const el = $('#set-' + k);
+    el.checked = state.settings[k] !== false;
+    el.addEventListener('change', () => { state.settings[k] = el.checked; save(); });
+  }
   $('#btn-export').addEventListener('click', exportData);
   $('#file-import').addEventListener('change', (e) => e.target.files[0] && importData(e.target.files[0]));
   $('#btn-reset').addEventListener('click', () => {
-    if (!confirm('Wirklich ALLE Daten löschen?')) return;
-    state = { activities: [], marks: {} }; save(); renderAll(); toast('Alle Daten gelöscht');
+    const online = typeof user !== 'undefined' && user;
+    if (!confirm(online ? 'Wirklich ALLE Daten löschen? Auch in der Cloud – auf allen Geräten.' : 'Wirklich ALLE Daten löschen? Trainings, Splits und Einstellungen.')) return;
+    const sync = state.sync;
+    state = blankState();
+    if (online) state.sync = sync; // so werden die Löschungen in die Cloud übertragen
+    save(); toast('Alle Daten gelöscht'); showView('train');
   });
-  renderAll();
+  initWorkout();
+  initSplits();
+  initProgress();
+  save(true); // übernommene Daten sofort im neuen Format sichern
+  initCloud();
+  if (typeof initSocial === 'function') initSocial();
+  buildChips();
+  $('#nav-back').addEventListener('click', () => showView(PUSHED[currentView] || 'train'));
+  window.addEventListener('scroll', onScroll, { passive: true });
+  setupSheetSwipe();
   const hashView = location.hash.slice(1);
-  if (['dashboard', 'feed', 'strength', 'record', 'add'].includes(hashView)) showView(hashView);
-  recRestore();
+  showView(VIEWS.includes(hashView) && hashView !== 'split-edit' ? hashView : 'train');
+  restoreWorkout();
   setupInstall();
   if ('serviceWorker' in navigator && location.protocol !== 'file:') {
     navigator.serviceWorker.register('sw.js').catch(() => {});
@@ -879,7 +807,6 @@ function setupInstall() {
   let dismissed = false;
   try { dismissed = localStorage.getItem('pulse.install.dismissed') === '1'; } catch (e) { /* ignore */ }
   if (dismissed) return;
-
   window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
     deferred = e;
@@ -905,5 +832,4 @@ function setupInstall() {
   window.addEventListener('appinstalled', () => box.classList.add('hidden'));
 }
 
-// Start, sobald alle Skripte (auch strength.js) geladen sind
 document.addEventListener('DOMContentLoaded', init);
