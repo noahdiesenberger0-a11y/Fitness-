@@ -775,6 +775,7 @@ function init() {
     state = blankState();
     if (online) state.sync = sync; // so werden die Löschungen in die Cloud übertragen
     save(); toast('Alle Daten gelöscht'); showView('train');
+    if (typeof showOnboarding === 'function') showOnboarding();
   });
   initWorkout();
   initSplits();
@@ -789,6 +790,8 @@ function init() {
   const hashView = location.hash.slice(1);
   showView(VIEWS.includes(hashView) && hashView !== 'split-edit' ? hashView : 'train');
   restoreWorkout();
+  if (typeof needsOnboarding === 'function' && needsOnboarding()) showOnboarding();
+  $('#btn-onboard').addEventListener('click', () => showOnboarding(true));
   setupInstall();
   if ('serviceWorker' in navigator && location.protocol !== 'file:') {
     navigator.serviceWorker.register('sw.js').catch(() => {});

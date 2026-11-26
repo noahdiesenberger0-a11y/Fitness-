@@ -136,7 +136,7 @@
     <!-- TRAINING -->
     <section id="view-train" class="view active" aria-labelledby="h-train">
       <div id="tr-home">
-        <h1 class="large-title" id="h-train">Training</h1>
+        <div class="greet" id="tr-greet"><h1 class="large-title" id="h-train">Training</h1></div>
         <div class="card welcome hidden" id="welcome">
           <h2>Willkommen bei Pulse</h2>
           <p class="muted">Bau dir deinen Split, hak deine Sätze ab und sieh, wie du stärker wirst. Oder schau dir die App erst mit Beispieldaten an.</p>
@@ -149,6 +149,10 @@
         <div class="card next-card" id="tr-next"></div>
 
         <div class="week-row" id="tr-week"></div>
+
+        <div id="tr-habits"></div>
+        <div id="tr-start"></div>
+        <div id="tr-tip"></div>
 
         <div class="quick">
           <button class="btn" data-start-empty><svg class="i" aria-hidden="true"><use href="#i-plus"/></svg>Freies Training</button>
@@ -376,6 +380,7 @@
         <p class="muted list-note">Ohne Konto liegen alle Daten nur auf diesem Gerät. Ein Export ist dein Backup.</p>
         <button class="list-row" id="btn-export"><svg class="i" aria-hidden="true"><use href="#i-download"/></svg><span>Backup exportieren</span><svg class="i chev" aria-hidden="true"><use href="#i-chevron"/></svg></button>
         <label class="list-row"><svg class="i" aria-hidden="true"><use href="#i-upload"/></svg><span>Backup importieren</span><svg class="i chev" aria-hidden="true"><use href="#i-chevron"/></svg><input type="file" id="file-import" accept="application/json" hidden /></label>
+        <button class="list-row" id="btn-onboard"><svg class="i" aria-hidden="true"><use href="#i-list"/></svg><span>Einrichtung erneut starten</span><svg class="i chev" aria-hidden="true"><use href="#i-chevron"/></svg></button>
         <button class="list-row" data-demo><svg class="i" aria-hidden="true"><use href="#i-bolt"/></svg><span>Beispieldaten laden</span><svg class="i chev" aria-hidden="true"><use href="#i-chevron"/></svg></button>
         <button class="list-row danger" id="btn-reset"><svg class="i" aria-hidden="true"><use href="#i-trash"/></svg><span>Alle Daten löschen</span></button>
       </div>
@@ -393,6 +398,9 @@
     </div>
   </div>
 
+  <!-- Einrichtung beim ersten Start -->
+  <div class="onboard hidden" id="onboard" role="dialog" aria-modal="true" aria-labelledby="ob-title"><div class="onboard-box" id="onboard-box"></div></div>
+
   <!-- Detail-Ansicht (Bottom-Sheet) -->
   <div class="modal hidden" id="modal"><div class="modal-box" id="modal-box" role="dialog" aria-modal="true"></div></div>
   <div class="toast hidden" id="toast" role="status"></div>
@@ -409,5 +417,6 @@
   <script src="social.js"></script>
   <script src="tips.js"></script>
   <script src="habits.js"></script>
+  <script src="onboarding.js"></script>
 </body>
 </html>

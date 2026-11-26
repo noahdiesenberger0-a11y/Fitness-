@@ -1,0 +1,12 @@
+{
+  "name": "pulse",
+  "private": true,
+  "type": "module",
+  "description": "Pulse – Fitness-Web-App ohne Build-Schritt. Diese Datei gibt es nur für die Tests.",
+  "scripts": {
+    "test": "node tests/smoke.mjs"
+  },
+  "devDependencies": {
+    "playwright": "1.49.1"
+  }
+}

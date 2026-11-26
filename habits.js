@@ -164,6 +164,7 @@ function setHabit(id, k, v) {
   if (k === todayKey() && !wasPerfect && isPerfect(k)) celebrate();
   checkBadges();
   renderHabits();
+  if (currentView === 'train' && typeof renderTrain === 'function') renderTrain();
 }
 function celebrate() {
   if (state.settings.sound) {
