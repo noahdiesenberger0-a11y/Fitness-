@@ -507,9 +507,12 @@ function buf(name) {
 }
 
 /** Ruhe-Richtung je Gelenk (Arme/Beine hängen) und Kind-Gelenk, das die Richtung im Modell vorgibt */
-const REST_AIM = { sh: 'el', el: 'wr', fa: 'wr', wr: 'f1', f1: 'f2', f2: 'f2', hp: 'kn', kn: 'an' };
+const REST_AIM = { sh: 'el', el: 'wr', fa: 'wr', wr: 'f1', f1: 'f2', f2: 'f3', f3: 'f3', th1: 'th2', th2: 'th2', hp: 'kn', kn: 'an' };
 /** Zusätzliche Drehung um die Längsachse (Grad), damit die Handflächen zum Körper zeigen */
 const REST_TWIST = { el: 0, fa: 0, wr: 0, f1: 0, f2: 0 };
+
+/** Griff: Beugung je Fingerglied (Anteil von "curl" in Grad) und Lage der Stange in der Faust (m) */
+const GRIP = { curl: 78, mcp: 0.85, pip: 1.0, dip: 0.65, th1: 0.5, th2: 0.6, palm: 0.028, along: 0.012 };
 
 function buildHuman(colors) {
   const { meta } = HUMAN;
@@ -571,20 +574,31 @@ function buildHuman(colors) {
     return o;
   };
   const sides = {};
+  const H = { mesh, J, root, sides, traps: mk('traps'), hand: {} };
+  /* Hand-Geometrie im Hand-System unserer Ruhehaltung (Arm hängt):
+   *  ax  = Knöchellinie (Beugeachse der Finger)   d = Fingerrichtung
+   *  np  = Richtung Handfläche (dorthin krümmen sich die Finger)
+   *  Der Griffpunkt liegt in der geschlossenen Faust, dort läuft die Stange durch. */
   for (const [s, S] of [['l', 'L'], ['r', 'R']]) {
-    const g = mk('grip.' + S);
-    // Kind-Objekt im Hand-Koordinatensystem der Gliederpuppe (für Hanteln)
+    const wr = J['wr.' + S], rbind = wr.rbindInv.clone().invert();
+    const toRest = (p) => V(...p).sub(V(...wr.pos)).applyQuaternion(wr.rbindInv);
+    const [k2, k5] = meta.knuckles[S].map(toRest);
+    const kmid = k2.clone().add(k5).multiplyScalar(0.5);
+    let ax = k5.clone().sub(k2).normalize();
+    if (S === 'R') ax.negate();
+    const d = toRest(J['f2.' + S].pos).sub(toRest(J['f1.' + S].pos)).normalize();
+    const np = d.clone().applyAxisAngle(ax, 0.1).sub(d).normalize();
+    const t = toRest(J['th2.' + S].pos).sub(toRest(J['th1.' + S].pos)).normalize();
+    let axT = V().crossVectors(t, np).normalize();
+    if (t.clone().applyAxisAngle(axT, 0.1).dot(np) < t.dot(np)) axT.negate();
+    H.hand[S] = { ax, d, np, axT };
+    // Griff: Kind des Handknochens, lokale Z-Achse entlang der Knöchellinie (Stange/Hantelgriff)
+    const gripRest = kmid.clone().addScaledVector(np, GRIP.palm).addScaledVector(d, GRIP.along);
     const grip = new THREE.Object3D();
-    grip.quaternion.copy(J['wr.' + S].rbindInv).invert();
-    g.add(grip);
+    grip.position.copy(gripRest).applyQuaternion(rbind);
+    grip.quaternion.copy(rbind).multiply(new THREE.Quaternion().setFromUnitVectors(V(0, 0, 1), ax));
+    wr.bone.add(grip);
     sides[s] = { grip, heel: mk('heel.' + S), toe: mk('toe.' + S) };
-  }
-  const H = { mesh, J, root, sides, traps: mk('traps'), curlAxis: {} };
-  // Knöchellinie (Zeigefinger -> kleiner Finger) im Hand-System unserer Ruhehaltung
-  for (const S of ['L', 'R']) {
-    const [k2, k5] = meta.knuckles[S].map((p) => V(...p));
-    const axis = k5.sub(k2).normalize().applyQuaternion(J['wr.' + S].rbindInv);
-    H.curlAxis[S] = S === 'L' ? axis : axis.negate();
   }
 
   H.paint = (active) => {
@@ -619,12 +633,30 @@ function buildHuman(colors) {
       src['sh.' + S] = wq(T.sh);
       src['el.' + S] = wq(T.el);
       src['wr.' + S] = wq(T.wr);
+      let twist = sg * D(g(s, 'sup'));
+      if (H.align) {
+        // Hand so um die Unterarmachse drehen, dass die Knöchellinie entlang der Stange liegt
+        const bar = H.align === 'between' ? wp(F.sides.l.wr).sub(wp(F.sides.r.wr)).normalize() : H.align.clone();
+        const fore = V(0, 1, 0).applyQuaternion(src['wr.' + S]);
+        const k = H.hand[S].ax.clone().applyQuaternion(src['wr.' + S]).projectOnPlane(fore).normalize();
+        const b = bar.projectOnPlane(fore).normalize();
+        if (b.lengthSq() > 0.5 && k.lengthSq() > 0.5) {
+          let ang = Math.atan2(V().crossVectors(k, b).dot(fore), k.dot(b));
+          if (ang > Math.PI / 2) ang -= Math.PI; else if (ang < -Math.PI / 2) ang += Math.PI; // Stange hat keine Richtung
+          src['wr.' + S] = tmpQ.setFromAxisAngle(fore, ang).clone().multiply(src['wr.' + S]);
+          twist += ang;
+        }
+      }
       // Unterarm dreht nur halb mit (wie Elle/Speiche), Hand ganz
-      src['fa.' + S] = src['el.' + S].clone().multiply(tmpQ.setFromAxisAngle(V(0, 1, 0), sg * D(g(s, 'sup')) * 0.5));
-      // Finger greifen (Faust): Drehung um die Knöchellinie
-      const curl = D(P.grip ?? 80), ax = H.curlAxis[S];
-      src['f1.' + S] = src['wr.' + S].clone().multiply(tmpQ.setFromAxisAngle(ax, curl * 0.9));
-      src['f2.' + S] = src['f1.' + S].clone().multiply(tmpQ.setFromAxisAngle(ax, curl));
+      src['fa.' + S] = src['el.' + S].clone().multiply(tmpQ.setFromAxisAngle(V(0, 1, 0), twist * 0.5));
+      // Finger umschließen den Griff: Grund-, Mittel- und Endglied beugen sich um die Knöchellinie,
+      // der Daumen legt sich von der anderen Seite darüber
+      const c = D(P.grip ?? GRIP.curl), hd = H.hand[S];
+      src['f1.' + S] = src['wr.' + S].clone().multiply(tmpQ.setFromAxisAngle(hd.ax, c * GRIP.mcp));
+      src['f2.' + S] = src['f1.' + S].clone().multiply(tmpQ.setFromAxisAngle(hd.ax, c * GRIP.pip));
+      src['f3.' + S] = src['f2.' + S].clone().multiply(tmpQ.setFromAxisAngle(hd.ax, c * GRIP.dip));
+      src['th1.' + S] = src['wr.' + S].clone().multiply(tmpQ.setFromAxisAngle(hd.axT, c * GRIP.th1));
+      src['th2.' + S] = src['th1.' + S].clone().multiply(tmpQ.setFromAxisAngle(hd.axT, c * GRIP.th2));
       src['hp.' + S] = wq(T.hp);
       src['kn.' + S] = wq(T.kn);
       src['an.' + S] = wq(T.an);
@@ -706,6 +738,10 @@ class View {
     if (HUMAN) {
       // Realistischer Körper; die Gliederpuppe bleibt unsichtbar als Treiber
       H = buildHuman(C);
+      // Stangen-Übungen: Hände automatisch an der Stange ausrichten
+      const eq = def.equip || [];
+      H.align = eq.includes('dipbar') ? V(0, 0, 1)
+        : (def.bar === 'hands' || eq.some((e) => ['pullbar', 'latseat', 'cable'].includes(e))) ? 'between' : null;
       H.paint(def.muscles);
       scene.add(H.mesh);
       A = H;

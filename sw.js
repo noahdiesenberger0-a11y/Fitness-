@@ -1,5 +1,5 @@
 /* Service Worker: macht Pulse offline nutzbar. Bei Änderungen VERSION erhöhen. */
-const VERSION = 'pulse-v7';
+const VERSION = 'pulse-v8';
 const ASSETS = [
   './', './index.html', './styles.css', './app.js', './models.js', './strength.js', './models3d.js', './vendor/three.module.min.js', './assets/human.json', './assets/human.bin', './manifest.json',
   './icons/icon-192.png', './icons/icon-512.png', './icons/maskable-512.png',

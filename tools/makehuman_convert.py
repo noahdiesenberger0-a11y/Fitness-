@@ -111,6 +111,9 @@ for s in 'LR':
         ('wr.' + s, 'fa.' + s, 'wrist.%s____head' % s),
         ('f1.' + s, 'wr.' + s, 'finger3-1.%s____head' % s),
         ('f2.' + s, 'f1.' + s, 'finger3-2.%s____head' % s),
+        ('f3.' + s, 'f2.' + s, 'finger3-3.%s____head' % s),
+        ('th1.' + s, 'wr.' + s, 'finger1-2.%s____head' % s),
+        ('th2.' + s, 'th1.' + s, 'finger1-3.%s____head' % s),
         ('hp.' + s, 'root', 'upperleg01.%s____head' % s),
         ('kn.' + s, 'hp.' + s, 'lowerleg01.%s____head' % s),
         ('an.' + s, 'kn.' + s, 'foot.%s____head' % s),
@@ -141,12 +144,18 @@ def group(bone):
         return 'el.' + s
     if base == 'lowerarm02':
         return 'fa.' + s
-    if base in ('wrist',) or base.startswith('metacarpal') or base.startswith('finger1-'):
+    if base == 'finger1-2':
+        return 'th1.' + s
+    if base == 'finger1-3':
+        return 'th2.' + s
+    if base in ('wrist', 'finger1-1') or base.startswith('metacarpal'):
         return 'wr.' + s
     if base.startswith('finger') and base.endswith('-1'):
         return 'f1.' + s
-    if base.startswith('finger'):
+    if base.startswith('finger') and base.endswith('-2'):
         return 'f2.' + s
+    if base.startswith('finger'):
+        return 'f3.' + s
     if base.startswith('upperleg'):
         return 'hp.' + s
     if base.startswith('lowerleg'):
@@ -182,7 +191,7 @@ def jpo(n):
 
 markers = {}
 for s in 'LR':
-    hand = np.where(W[:, jnames.index('wr.' + s)] + W[:, jnames.index('f1.' + s)] > 0.5)[0]
+    hand = np.where(W[:, jnames.index('wr.' + s)] + W[:, jnames.index('f1.' + s)] > 0.5)[0]  # (Griffpunkt wird in der App aus der Faust berechnet)
     c = P[hand].mean(0)
     markers['grip.' + s] = ('wr.' + s, (jpo('wr.' + s) * 0.35 + jpo('f1.' + s) * 0.65 + c) / 2)
     foot = np.where(W[:, jnames.index('an.' + s)] + W[:, jnames.index('toe.' + s)] > 0.5)[0]
@@ -297,6 +306,7 @@ meta = {'vertices': int(len(used)), 'triangles': int(len(idx)), 'buffers': {}, '
         'joints': [{'name': n, 'parent': p, 'pos': [round(float(x), 4) for x in jpos[jnames.index(n)]]} for n, p, _ in JOINTS],
         'markers': {k: {'joint': j, 'pos': [round(float(x), 4) for x in v]} for k, (j, v) in markers.items()},
         'knuckles': {S: [[round(float(x), 4) for x in J('finger2-1.%s____head' % S)], [round(float(x), 4) for x in J('finger5-1.%s____head' % S)]] for S in 'LR'},
+        'tips': {S: {'finger': [round(float(x), 4) for x in J('finger3-3.%s____tail' % S)], 'thumb': [round(float(x), 4) for x in J('finger1-3.%s____tail' % S)]} for S in 'LR'},
         'source': 'MakeHuman base mesh and targets (CC0), converted for this app',
         'shape': {'gender': 'male', 'age': 'young', 'muscle': MUSCLE, 'weight': WEIGHT}}
 with open(out_dir + '/human.bin', 'wb') as f:
