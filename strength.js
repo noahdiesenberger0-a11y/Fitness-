@@ -95,7 +95,9 @@ function renderPlan() {
   $('#st-plan-sum').textContent = list.length ? `${totalSets} Sätze · ca. ${Math.round(estSec / 60)} min` : '';
   $('#st-plan').innerHTML = list.length ? list.map((e, i) => `
     <div class="plan-item">
-      <svg class="model plan-thumb" viewBox="${modelViewBox(e.exId)}" aria-hidden="true">${modelSvg(e.exId, 0.5)}</svg>
+      ${window.Model3D?.ready
+        ? `<img class="plan-thumb" src="${Model3D.thumb(e.exId)}" alt="" />`
+        : `<svg class="model plan-thumb" viewBox="${modelViewBox(e.exId)}" aria-hidden="true">${modelSvg(e.exId, 0.5)}</svg>`}
       <div class="plan-body">
         <div class="plan-name">${esc(e.name)}</div>
         <div class="muted">${e.sets} × ${e.reps} Wdh. · ${e.weight ? String(e.weight).replace('.', ',') + ' kg' : 'Körpergewicht'} · Tempo ${esc(e.tempo)} · Pause ${fmtDur(e.rest)}</div>
@@ -317,6 +319,7 @@ function updateRest() {
 
 /** Figur zeichnen: 0 = Startposition, 1 = Endposition der Bewegung */
 function setBar(pos) {
+  if (window.Model3D?.ready) return Model3D.draw($('#pl-anim3d'), curEx().exId, pos);
   const svg = $('#pl-anim');
   const vb = modelViewBox(curEx().exId);
   if (svg.getAttribute('viewBox') !== vb) svg.setAttribute('viewBox', vb);
@@ -439,10 +442,14 @@ function previewLoop(ts) {
     const t = (ts % 4000) / 4000;
     let pos = 0.5 - Math.cos(t * 2 * Math.PI) / 2;
     if (def.start === 'top') pos = 1 - pos;
-    const svg = $('#st-preview');
-    const vb = modelViewBox(id);
-    if (svg.getAttribute('viewBox') !== vb) svg.setAttribute('viewBox', vb);
-    svg.innerHTML = modelSvg(id, pos);
+    if (window.Model3D?.ready) {
+      Model3D.draw($('#st-preview3d'), id, pos);
+    } else {
+      const svg = $('#st-preview');
+      const vb = modelViewBox(id);
+      if (svg.getAttribute('viewBox') !== vb) svg.setAttribute('viewBox', vb);
+      svg.innerHTML = modelSvg(id, pos);
+    }
   }
   previewRaf = requestAnimationFrame(previewLoop);
 }
@@ -459,6 +466,8 @@ function initStrength() {
   });
   updatePreviewMuscles();
   previewRaf = requestAnimationFrame(previewLoop);
+  // 3D-Modul lädt asynchron: danach Vorschaubilder in der Liste neu zeichnen
+  window.addEventListener('model3d-ready', () => renderPlan());
   $('#st-tempo').addEventListener('change', (e) => {
     $('#st-tempo-custom-wrap').classList.toggle('hidden', e.target.value !== 'custom');
   });

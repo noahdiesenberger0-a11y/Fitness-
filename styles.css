@@ -358,6 +358,14 @@ input[type=date] { padding-right: var(--s-2); }
 .pl-phase.countdown { font-size: 64px; color: var(--accent); }
 .pl-anim { width: 100%; max-width: 360px; height: auto; display: block; margin: 0 auto; }
 .pl-stage.paused .pl-anim { opacity: .4; }
+/* 3D-Figur (WebGL); ohne WebGL bleibt die 2D-Figur */
+.model3d { display: none; width: 100%; aspect-ratio: 6 / 5; max-height: 320px; touch-action: pan-y; cursor: grab; }
+.model3d:active { cursor: grabbing; }
+.m3d-hint { display: none; text-align: center; font-size: var(--t-label); color: var(--muted); margin-top: calc(-1 * var(--s-1)); }
+.has-3d .model3d, .has-3d .m3d-hint { display: block; }
+.has-3d #st-preview, .has-3d #pl-anim { display: none; }
+.pl-anim.model3d { max-height: 380px; }
+img.plan-thumb { object-fit: contain; }
 .pl-phasebar { height: 6px; background: var(--panel2); border-radius: 3px; overflow: hidden; max-width: 300px; margin: var(--s-1) auto var(--s-4); }
 .pl-phasebar i { display: block; height: 100%; width: 0; background: var(--accent); }
 .pl-phasebar i.down { background: var(--ink); }

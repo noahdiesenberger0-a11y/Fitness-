@@ -203,6 +203,8 @@
           </label>
           <div class="ex-preview">
             <svg class="model" id="st-preview" viewBox="0 -24 300 250" aria-hidden="true"></svg>
+            <canvas class="model3d" id="st-preview3d" aria-label="3D-Figur, zum Drehen seitlich ziehen"></canvas>
+            <div class="m3d-hint">Zum Drehen ziehen</div>
             <div class="muscle-tags" id="st-preview-muscles"></div>
           </div>
           <label class="hidden" id="st-custom-wrap">Name der Übung <input name="custom" placeholder="z.B. Beinpresse" /></label>
@@ -253,6 +255,7 @@
           <div class="pl-stage" id="pl-stage">
             <div class="pl-phase" id="pl-phase" aria-live="polite">Bereit</div>
             <svg class="pl-anim model" id="pl-anim" viewBox="0 -24 300 250" aria-hidden="true"></svg>
+            <canvas class="pl-anim model3d" id="pl-anim3d" aria-label="3D-Figur, zum Drehen seitlich ziehen"></canvas>
             <div class="muscle-tags" id="pl-muscles"></div>
             <div class="pl-phasebar"><i id="pl-phasefill"></i></div>
             <div class="pl-count num"><span id="pl-rep">0</span><small> / <span id="pl-reps">8</span></small></div>
@@ -353,5 +356,6 @@
   <script src="app.js"></script>
   <script src="models.js"></script>
   <script src="strength.js"></script>
+  <script type="module" src="models3d.js"></script>
 </body>
 </html>
