@@ -1,29 +1,34 @@
-# Pulse – Fitness Tracker
+# Pulse Gym – Trainings-App fürs Fitnessstudio
 
-Eine leichtgewichtige Fitness-App im Stil von Strava, mit einem **Contribution-Graph wie auf GitHub**,
-in dem du siehst, an welchen Tagen du trainiert hast.
+Pulse ist jetzt eine reine **Gym-App**. Laufen, Radfahren und GPS sind rausgeflogen – dafür ist alles rund ums Krafttraining
+deutlich ausgebaut und die App führt dich Schritt für Schritt.
+
+## Aufbau
+
+| Bereich | Was du dort machst |
+|---|---|
+| **Einrichtung** (erster Start) | Name, Ziel (Muskelaufbau / Maximalkraft / Fit & straff) und Trainingstage wählen → fertiger Plan |
+| **Heute** | Nächstes Training mit allen Übungen und Gewichten, großer Start-Button, Wochenziel, Monatsbilanz, letztes Training |
+| **Pläne** | Eigene Pläne anlegen/bearbeiten, 9 Vorlagen (Ganzkörper, Push/Pull/Beine, Ober-/Unterkörper) |
+| **Training** | Sätze loggen (kg, Wdh., Haken), Werte vom letzten Mal, automatischer Pausen-Timer, Tempo-Coach, Scheibenrechner |
+| **Verlauf** | Alle Trainings nach Monat, Details, „Nochmal machen“, „Als Plan speichern“, Nachtragen |
+| **Fortschritt** | Wochen-Serie, Trainingskalender, Volumen pro Woche, Sätze pro Muskelgruppe, Bestleistungen (1RM), Körpergewicht, Übungs-Bibliothek |
 
 ## Features
 
-- **Contribution-Heatmap**: das letzte Jahr, Tag für Tag. Je mehr Trainingsminuten, desto dunkler das Grün. Filterbar nach Sportart.
-- **Streaks**
-  - 🔥 Aktuelle Streak und 🏆 längste Streak (Tage in Folge mit Training)
-  - 📅 Wochen-Streak (Wochen in Folge mit mindestens einem Training)
-  - 😴 **Ruhetage** halten die Streak, ⏭️ **Skips** (ausgelassene Tage) brechen sie und werden gezählt
-  - Heute bricht die Streak noch nicht, solange der Tag nicht vorbei ist
-- **Splits**: km-Splits mit Pace, Unterschied zum vorherigen km, schnellstem km ⚡ und Erkennung von Negativ-Splits
-- **GPS-Aufzeichnung**: Live-Tracking im Browser mit Zeit, Distanz, Pace, automatischen km-Splits (mit Vibration) und Routenskizze
-- **Kraft-Modus** 🏋️: Training aus Übungen zusammenstellen (z. B. Bankdrücken 3 × 8 mit 60 kg)
-  - Eine **animierte Figur** macht jede Übung im eingestellten **Tempo** vor (z. B. 3 s runter, 1 s halten, 1 s hoch), mit Gerät (Hantel, Bank, Stange, Kabelzug …) und farbig markierten Muskeln
-  - Die Figuren sind selbst gebaut: ein Skelett aus Gelenkwinkeln, berechnet im Code (`models.js`), keine Bilddateien
-  - Zählt Wiederholungen und Sätze mit, auf Wunsch mit Signaltönen, Sprachausgabe und Vibration
-  - Automatische **Satzpause** mit Countdown, tatsächlich geschaffte Wiederholungen lassen sich anpassen
-  - Speichert Sätze, Gewicht und Volumen, Bestleistungen pro Übung
-- **Manuelles Eintragen** mit Dauer, Distanz, Splits, Gefühl und Notizen; Bearbeiten und Löschen
-- **Statistiken**: Woche, Monat und Jahr, Aufteilung nach Sportart, Diagramm der letzten 12 Wochen
-- **Persönliche Bestleistungen**: längster Lauf, schnellster km, beste Pace ab 5 km, 10 km und Halbmarathon, längste Radtour und mehr
-- **Sportarten**: Laufen, Radfahren (km/h), Schwimmen (/100 m), Wandern, Gehen, Krafttraining, Yoga, Sonstiges
-- Export und Import als JSON, Demo-Daten zum Ausprobieren, Hell- und Dunkelmodus, für Handys optimiert
+- **Geführter Einstieg**: Beim ersten Öffnen wird in 3 Schritten ein passender Trainingsplan erstellt – nie mehr eine leere Startseite
+- **Nächstes Training automatisch**: Pläne werden reihum vorgeschlagen
+- **Progressive Overload**: Alle Wiederholungen geschafft? Beim nächsten Mal wird automatisch mehr Gewicht eingetragen (↑)
+- **Sätze abhaken** wie in einer echten Gym-App, Gewicht wird auf die folgenden Sätze übernommen, „Vorher“-Spalte zum Antippen
+- **Pausen-Timer** startet nach jedem Satz (±15 s, überspringen, Ton + Vibration am Ende)
+- **Tempo-Coach**: animierte Figur macht die Übung im eingestellten Tempo vor, zählt mit (Ton, Sprache, Vibration) und hakt den Satz ab
+- **Bestleistungen live**: Meldung direkt beim Abhaken, Übersicht nach dem Training
+- **Scheibenrechner** für Langhantelübungen (Stange 20/15/10 kg)
+- **30 Übungen** mit Muskelgruppen, eigene Übungen anlegbar, Entwicklung des geschätzten 1RM pro Übung
+- **Wochenziel & Serie** (Wochen in Folge mit erreichtem Ziel), Sätze pro Muskelgruppe mit Richtwert 10–20
+- **Körpergewicht** mit Verlauf
+- Laufendes Training übersteht Schließen/Neuladen, Backup Export/Import, Beispieldaten, Hell-/Dunkelmodus
+- Alte Krafttrainings aus der vorherigen Pulse-Version werden automatisch übernommen
 
 ## Design
 
@@ -39,12 +44,12 @@ Das Design folgt den Regeln aus zwei Design-Skills ([taste-skill](https://github
 
 ## Aufs Handy bringen (Web-App)
 
-Pulse ist eine **Progressive Web App**: Sie wird über den Browser installiert, bekommt ein eigenes Icon
+Pulse Gym ist eine **Progressive Web App**: Sie wird über den Browser installiert, bekommt ein eigenes Icon
 auf dem Home-Bildschirm, startet im Vollbild ohne Browserleiste und funktioniert auch offline.
 
 ### 1. Online stellen
 
-Am Handy braucht die App **HTTPS**, sonst erlauben Handys weder GPS noch die Installation.
+Am Handy braucht die App **HTTPS**, sonst ist keine Installation möglich.
 Am einfachsten geht das mit GitHub Pages:
 
 1. Im Repository auf GitHub: **Settings → Pages**
@@ -62,10 +67,9 @@ Am einfachsten geht das mit GitHub Pages:
 
 - Offline nutzbar (Service Worker `sw.js`)
 - Navigationsleiste unten, Detailansichten als Bottom-Sheet, Safe-Area für Notch und Home-Indicator
-- **Bildschirm bleibt während der GPS-Aufzeichnung an** (Wake Lock). Browser stoppen GPS, sobald das Handy gesperrt wird.
-- **Laufende Aufzeichnung übersteht Schließen und Neuladen** und wird beim nächsten Öffnen fortgesetzt
-- Vibration bei jedem km-Split
-- App-Shortcuts (lange auf das Icon drücken): „Aufzeichnen“ und „Eintragen“
+- **Bildschirm bleibt im Tempo-Coach an** (Wake Lock)
+- **Laufendes Training übersteht Schließen und Neuladen**
+- App-Shortcuts (lange auf das Icon drücken): „Nächstes Training starten“ und „Fortschritt“
 
 ### Lokal testen
 
@@ -82,8 +86,8 @@ Alle Daten bleiben lokal im Browser bzw. in der App (`localStorage`). Mit **Expo
 |----------------|-----------------------------------------------|
 | `index.html`   | Aufbau der Ansichten                          |
 | `styles.css`   | Design (dunkel/hell, mobil)                   |
-| `app.js`       | Logik: Streaks, Heatmap, Splits, GPS, Statistik |
-| `strength.js`  | Kraft-Modus: Sätze, Wiederholungen, Tempo-Animation |
+| `app.js`       | Daten, Heute, Verlauf, Fortschritt, Einstellungen, Einrichtung |
+| `workout.js`   | Übungen, Pläne, laufendes Training, Pausen-Timer, Tempo-Coach |
 | `models.js`    | Animierte Übungs-Figuren (Posen, Muskeln, Geräte) |
 | `manifest.json`| Web-App-Manifest (Name, Icons, Vollbild, Shortcuts) |
 | `sw.js`        | Service Worker für den Offline-Betrieb        |
