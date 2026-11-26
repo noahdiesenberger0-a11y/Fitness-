@@ -606,7 +606,7 @@ function importData(file) {
 let currentView = 'train';
 const VIEWS = ['train', 'feed', 'habits', 'splits', 'discover', 'progress', 'profile', 'split-edit'];
 const VIEW_TITLES = { train: 'Training', feed: 'Feed', habits: 'Habits', splits: 'Splits', discover: 'Entdecken', progress: 'Fortschritt', profile: 'Profil', 'split-edit': 'Split' };
-const PUSHED = { 'split-edit': 'splits', discover: 'splits' }; // Unterseiten: Zurück führt zu diesem Tab
+const PUSHED = { 'split-edit': 'splits', discover: 'splits', progress: 'profile' }; // Unterseiten: Zurück führt zu diesem Tab
 const scrollMemory = {};
 
 function showView(v) {
