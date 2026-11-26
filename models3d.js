@@ -74,8 +74,8 @@ const EX = {
   },
   curl: {
     anchor: 'feet', muscles: ['biceps'], dumbbells: true, view: 48,
-    p0: { ...STAND, ...ARMS_DOWN, sup: 90, el: 6 },
-    p1: { ...STAND, ...ARMS_DOWN, shF: 12, sup: 90, el: 138 },
+    p0: { ...STAND, ...ARMS_DOWN, shA: 15, sup: 90, el: 6 },
+    p1: { ...STAND, ...ARMS_DOWN, shF: 12, shA: 12, sup: 90, el: 138 },
   },
   lunge: {
     anchor: 'lfoot', at: [0, 0, 0.32], muscles: ['quads', 'glutes'], dumbbells: true, view: 72,
@@ -487,18 +487,25 @@ function buildEquip(def, mats, F) {
  */
 let HUMAN = null; // { meta, buf }
 let humanVersion = 0;
-const humanReady = (async () => {
-  if (typeof fetch === 'undefined') return;
-  try {
+/** Figur: 'man' oder 'woman' (Character-Creator-Modelle in assets/) */
+const FIGURES = ['man', 'woman'];
+const FIG_KEY = 'pulse-figure';
+let figure = (() => { try { return FIGURES.includes(localStorage.getItem(FIG_KEY)) ? localStorage.getItem(FIG_KEY) : 'man'; } catch (e) { return 'man'; } })();
+const humanCache = {};
+function loadHuman(name) {
+  if (typeof fetch === 'undefined') return Promise.resolve();
+  if (!humanCache[name]) {
     const base = new URL('./assets/', import.meta.url);
-    const [meta, buf] = await Promise.all([
-      fetch(new URL('human.json', base)).then((r) => r.json()),
-      fetch(new URL('human.bin', base)).then((r) => r.arrayBuffer()),
-    ]);
-    HUMAN = { meta, buf };
-    humanVersion++;
-  } catch (e) { /* offline ohne Cache: Gliederpuppe bleibt */ }
-})();
+    humanCache[name] = Promise.all([
+      fetch(new URL(name + '.json', base)).then((r) => r.json()),
+      fetch(new URL(name + '.bin', base)).then((r) => r.arrayBuffer()),
+    ]).then(([meta, buf]) => ({ meta, buf })).catch(() => { delete humanCache[name]; return null; });
+  }
+  return humanCache[name].then((h) => {
+    if (h && name === figure) { HUMAN = h; humanVersion++; }
+  });
+}
+let humanReady = loadHuman(figure);
 
 const TYPES = { i16: Int16Array, u16: Uint16Array, u8: Uint8Array };
 function buf(name) {
@@ -518,6 +525,7 @@ function buildHuman(colors) {
   const { meta } = HUMAN;
   const n = meta.vertices;
   const geo = new THREE.BufferGeometry();
+  const tex = meta.buffers.col ? buf('col') : null; // Farben aus den Texturen (Haut, Kleidung, Haare)
   const p16 = buf('pos');
   const pos = new Float32Array(n * 3);
   for (let i = 0; i < pos.length; i++) pos[i] = p16[i] / 1000;
@@ -557,7 +565,7 @@ function buildHuman(colors) {
   }
   const root = J.root.bone;
   const skeleton = new THREE.Skeleton(bones);
-  const mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.6, metalness: 0 });
+  const mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: tex ? 0.68 : 0.6, metalness: 0, side: tex ? THREE.DoubleSide : THREE.FrontSide });
   const mesh = new THREE.SkinnedMesh(geo, mat);
   mesh.add(root);
   mesh.updateMatrixWorld(true);
@@ -610,6 +618,17 @@ function buildHuman(colors) {
     const si = meta.masks.indexOf('shorts');
     const c = new THREE.Color();
     for (let i = 0; i < n; i++) {
+      if (tex) {
+        // echte Farben; trainierte Muskeln (nur auf der Haut) in Akzentfarbe
+        c.setRGB(tex[i * 3] / 255, tex[i * 3 + 1] / 255, tex[i * 3 + 2] / 255, THREE.SRGBColorSpace);
+        if (part[i] === 0) {
+          let a = 0;
+          for (const k of ai) a = Math.max(a, masks[i * mk + k] / 255);
+          c.lerp(acc, a * 0.85);
+        }
+        c.toArray(col, i * 3);
+        continue;
+      }
       if (part[i] === 1) { eye.toArray(col, i * 3); continue; }
       let a = 0;
       for (const k of ai) a = Math.max(a, masks[i * mk + k] / 255);
@@ -903,7 +922,17 @@ const Model3D = {
     return url;
   },
   exercises: EX,
-  humanReady,
+  get humanReady() { return humanReady; },
+  figures: FIGURES,
+  get figure() { return figure; },
+  /** Figur wechseln ('man' | 'woman'); zeichnet danach alle Ansichten neu */
+  setFigure(name) {
+    if (!FIGURES.includes(name) || name === figure) return humanReady;
+    figure = name;
+    try { localStorage.setItem(FIG_KEY, name); } catch (e) { /* ignore */ }
+    humanReady = loadHuman(name).then(() => { if (HUMAN) window.dispatchEvent(new Event('model3d-ready')); });
+    return humanReady;
+  },
   /** Gelenkpositionen (zum Prüfen der Posen) */
   debug(exId, pos) {
     if (!thumbView) thumbView = new View(document.createElement('canvas'), { thumb: true });

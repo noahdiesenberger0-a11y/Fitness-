@@ -1,0 +1,481 @@
+{
+ "vertices": 14248,
+ "triangles": 28376,
+ "buffers": {
+  "pos": {
+   "offset": 0,
+   "length": 85488,
+   "type": "i16",
+   "itemSize": 3
+  },
+  "idx": {
+   "offset": 85488,
+   "length": 170256,
+   "type": "u16",
+   "itemSize": 1
+  },
+  "ji": {
+   "offset": 255744,
+   "length": 56992,
+   "type": "u8",
+   "itemSize": 4
+  },
+  "jw": {
+   "offset": 312736,
+   "length": 56992,
+   "type": "u8",
+   "itemSize": 4
+  },
+  "mask": {
+   "offset": 369728,
+   "length": 170976,
+   "type": "u8",
+   "itemSize": 12
+  },
+  "part": {
+   "offset": 540704,
+   "length": 14248,
+   "type": "u8",
+   "itemSize": 1
+  },
+  "col": {
+   "offset": 554952,
+   "length": 42744,
+   "type": "u8",
+   "itemSize": 3
+  }
+ },
+ "masks": [
+  "chest",
+  "abs",
+  "lats",
+  "lowerBack",
+  "glutes",
+  "delts",
+  "biceps",
+  "triceps",
+  "quads",
+  "hamstrings",
+  "calves",
+  "shorts"
+ ],
+ "parts": [
+  "skin",
+  "eyes",
+  "clothes",
+  "hair"
+ ],
+ "joints": [
+  {
+   "name": "root",
+   "parent": null,
+   "pos": [
+    0.0,
+    0.9517,
+    -0.0
+   ]
+  },
+  {
+   "name": "spine",
+   "parent": "root",
+   "pos": [
+    -0.0,
+    1.0265,
+    0.015
+   ]
+  },
+  {
+   "name": "chest",
+   "parent": "spine",
+   "pos": [
+    0.0,
+    1.2058,
+    0.0098
+   ]
+  },
+  {
+   "name": "neck",
+   "parent": "chest",
+   "pos": [
+    -0.0,
+    1.4768,
+    -0.0344
+   ]
+  },
+  {
+   "name": "head",
+   "parent": "neck",
+   "pos": [
+    -0.0,
+    1.5457,
+    -0.0154
+   ]
+  },
+  {
+   "name": "scap.L",
+   "parent": "chest",
+   "pos": [
+    0.0557,
+    1.4185,
+    -0.025
+   ]
+  },
+  {
+   "name": "sh.L",
+   "parent": "scap.L",
+   "pos": [
+    0.1822,
+    1.4235,
+    -0.0549
+   ]
+  },
+  {
+   "name": "el.L",
+   "parent": "sh.L",
+   "pos": [
+    0.4424,
+    1.2604,
+    -0.0567
+   ]
+  },
+  {
+   "name": "fa.L",
+   "parent": "el.L",
+   "pos": [
+    0.5467,
+    1.2017,
+    -0.0587
+   ]
+  },
+  {
+   "name": "wr.L",
+   "parent": "fa.L",
+   "pos": [
+    0.651,
+    1.1429,
+    -0.0606
+   ]
+  },
+  {
+   "name": "f1.L",
+   "parent": "wr.L",
+   "pos": [
+    0.7384,
+    1.1007,
+    -0.054
+   ]
+  },
+  {
+   "name": "f2.L",
+   "parent": "f1.L",
+   "pos": [
+    0.7798,
+    1.077,
+    -0.0544
+   ]
+  },
+  {
+   "name": "f3.L",
+   "parent": "f2.L",
+   "pos": [
+    0.807,
+    1.0611,
+    -0.0548
+   ]
+  },
+  {
+   "name": "th1.L",
+   "parent": "wr.L",
+   "pos": [
+    0.7016,
+    1.1061,
+    0.0092
+   ]
+  },
+  {
+   "name": "th2.L",
+   "parent": "th1.L",
+   "pos": [
+    0.7275,
+    1.0918,
+    0.023
+   ]
+  },
+  {
+   "name": "hp.L",
+   "parent": "root",
+   "pos": [
+    0.0884,
+    0.93,
+    -0.0044
+   ]
+  },
+  {
+   "name": "kn.L",
+   "parent": "hp.L",
+   "pos": [
+    0.0818,
+    0.4945,
+    -0.0119
+   ]
+  },
+  {
+   "name": "an.L",
+   "parent": "kn.L",
+   "pos": [
+    0.0748,
+    0.0542,
+    -0.023
+   ]
+  },
+  {
+   "name": "toe.L",
+   "parent": "an.L",
+   "pos": [
+    0.0915,
+    0.0214,
+    0.1279
+   ]
+  },
+  {
+   "name": "scap.R",
+   "parent": "chest",
+   "pos": [
+    -0.0557,
+    1.4185,
+    -0.025
+   ]
+  },
+  {
+   "name": "sh.R",
+   "parent": "scap.R",
+   "pos": [
+    -0.1822,
+    1.4234,
+    -0.055
+   ]
+  },
+  {
+   "name": "el.R",
+   "parent": "sh.R",
+   "pos": [
+    -0.4423,
+    1.2604,
+    -0.0567
+   ]
+  },
+  {
+   "name": "fa.R",
+   "parent": "el.R",
+   "pos": [
+    -0.5467,
+    1.2016,
+    -0.0586
+   ]
+  },
+  {
+   "name": "wr.R",
+   "parent": "fa.R",
+   "pos": [
+    -0.651,
+    1.1429,
+    -0.0605
+   ]
+  },
+  {
+   "name": "f1.R",
+   "parent": "wr.R",
+   "pos": [
+    -0.7384,
+    1.1007,
+    -0.0539
+   ]
+  },
+  {
+   "name": "f2.R",
+   "parent": "f1.R",
+   "pos": [
+    -0.7798,
+    1.077,
+    -0.0543
+   ]
+  },
+  {
+   "name": "f3.R",
+   "parent": "f2.R",
+   "pos": [
+    -0.8069,
+    1.0611,
+    -0.0547
+   ]
+  },
+  {
+   "name": "th1.R",
+   "parent": "wr.R",
+   "pos": [
+    -0.7015,
+    1.1061,
+    0.0092
+   ]
+  },
+  {
+   "name": "th2.R",
+   "parent": "th1.R",
+   "pos": [
+    -0.7274,
+    1.0918,
+    0.0231
+   ]
+  },
+  {
+   "name": "hp.R",
+   "parent": "root",
+   "pos": [
+    -0.0884,
+    0.93,
+    -0.0044
+   ]
+  },
+  {
+   "name": "kn.R",
+   "parent": "hp.R",
+   "pos": [
+    -0.0818,
+    0.4946,
+    -0.0119
+   ]
+  },
+  {
+   "name": "an.R",
+   "parent": "kn.R",
+   "pos": [
+    -0.0748,
+    0.0541,
+    -0.023
+   ]
+  },
+  {
+   "name": "toe.R",
+   "parent": "an.R",
+   "pos": [
+    -0.0915,
+    0.0212,
+    0.1278
+   ]
+  }
+ ],
+ "markers": {
+  "grip.L": {
+   "joint": "wr.L",
+   "pos": [
+    0.7139,
+    1.1081,
+    -0.0557
+   ]
+  },
+  "heel.L": {
+   "joint": "an.L",
+   "pos": [
+    0.0766,
+    0.0001,
+    -0.0691
+   ]
+  },
+  "toe.L": {
+   "joint": "toe.L",
+   "pos": [
+    0.0556,
+    0.0001,
+    0.2044
+   ]
+  },
+  "grip.R": {
+   "joint": "wr.R",
+   "pos": [
+    -0.7139,
+    1.1081,
+    -0.0559
+   ]
+  },
+  "heel.R": {
+   "joint": "an.R",
+   "pos": [
+    -0.0766,
+    0.0,
+    -0.0691
+   ]
+  },
+  "toe.R": {
+   "joint": "toe.R",
+   "pos": [
+    -0.0557,
+    0.0,
+    0.2042
+   ]
+  },
+  "traps": {
+   "joint": "chest",
+   "pos": [
+    0.0,
+    1.4468,
+    -0.1605
+   ]
+  }
+ },
+ "knuckles": {
+  "L": [
+   [
+    0.7391,
+    1.098,
+    -0.0311
+   ],
+   [
+    0.7296,
+    1.096,
+    -0.0918
+   ]
+  ],
+  "R": [
+   [
+    -0.7391,
+    1.098,
+    -0.031
+   ],
+   [
+    -0.7296,
+    1.096,
+    -0.0917
+   ]
+  ]
+ },
+ "tips": {
+  "L": {
+   "finger": [
+    0.8345,
+    1.0459,
+    -0.0545
+   ],
+   "thumb": [
+    0.7546,
+    1.0795,
+    0.0363
+   ]
+  },
+  "R": {
+   "finger": [
+    -0.8345,
+    1.0459,
+    -0.0544
+   ],
+   "thumb": [
+    -0.7546,
+    1.0795,
+    0.0364
+   ]
+  }
+ },
+ "source": "Character Creator base mesh (Realistic Human Basemesh), converted for this app",
+ "shape": {
+  "gender": "male"
+ }
+}

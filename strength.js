@@ -492,6 +492,24 @@ function initStrength() {
     el.checked = plan[k] !== false;
     el.addEventListener('change', () => { plan[k] = el.checked; savePlan(); });
   }
+  // 3D-Figur: Mann oder Frau (nur mit WebGL sichtbar)
+  const figSeg = $('#st-figure');
+  const syncFig = () => {
+    $('#st-figure-card').classList.toggle('hidden', !window.Model3D?.ready);
+    for (const b of figSeg.querySelectorAll('button')) {
+      const on = b.dataset.fig === window.Model3D?.figure;
+      b.classList.toggle('active', on);
+      b.setAttribute('aria-pressed', on);
+    }
+  };
+  figSeg.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-fig]');
+    if (!b || !window.Model3D?.ready) return;
+    Model3D.setFigure(b.dataset.fig);
+    syncFig();
+  });
+  window.addEventListener('model3d-ready', syncFig);
+  syncFig();
   $('#st-start').addEventListener('click', startWorkout);
   $('#pl-pause').addEventListener('click', togglePause);
   $('#pl-setdone').addEventListener('click', () => {

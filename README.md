@@ -14,7 +14,7 @@ in dem du siehst, an welchen Tagen du trainiert hast.
 - **Splits**: km-Splits mit Pace, Unterschied zum vorherigen km, schnellstem km ⚡ und Erkennung von Negativ-Splits
 - **GPS-Aufzeichnung**: Live-Tracking im Browser mit Zeit, Distanz, Pace, automatischen km-Splits (mit Vibration) und Routenskizze
 - **Kraft-Modus** 🏋️: Training aus Übungen zusammenstellen (z. B. Bankdrücken 3 × 8 mit 60 kg)
-  - Ein **realistischer 3D-Mensch** macht jede Übung im eingestellten **Tempo** vor (z. B. 3 s runter, 1 s halten, 1 s hoch), mit Gerät (Langhantel, Kurzhanteln, Bank, Rack, Klimmzugstange, Dip-Barren, Beinpresse, Latzug, Kabelzug) und farbig markierten Muskeln. Mit dem Finger seitlich ziehen dreht die Ansicht (Doppeltipp: zurück)
+  - Ein **realistischer 3D-Mensch** (wählbar: **Mann oder Frau**, Umschalter „3D-Figur“ im Kraft-Modus) macht jede Übung im eingestellten **Tempo** vor (z. B. 3 s runter, 1 s halten, 1 s hoch), mit Gerät (Langhantel, Kurzhanteln, Bank, Rack, Klimmzugstange, Dip-Barren, Beinpresse, Latzug, Kabelzug) und farbig markierten Muskeln. Mit dem Finger seitlich ziehen dreht die Ansicht (Doppeltipp: zurück)
   - Die Bewegungen sind als Gelenkwinkel der richtigen Ausführung hinterlegt (`models3d.js`, Start- und Endpose je Übung) und wurden nachgemessen: z. B. Stange berührt beim Bankdrücken die Brust, Scheiben stehen beim Kreuzheben auf dem Boden, Füße bleiben stehen
   - Ohne WebGL zeigt die App automatisch die einfachen 2D-Figuren (`models.js`)
   - Zählt Wiederholungen und Sätze mit, auf Wunsch mit Signaltönen, Sprachausgabe und Vibration
@@ -87,9 +87,10 @@ Alle Daten bleiben lokal im Browser bzw. in der App (`localStorage`). Mit **Expo
 | `strength.js`  | Kraft-Modus: Sätze, Wiederholungen, Tempo-Animation |
 | `models3d.js`  | 3D-Übungen: Posen je Übung, Übertragung aufs Skelett, Geräte, Muskeln, Kamera |
 | `models.js`    | 2D-Ersatzfiguren, falls kein WebGL verfügbar ist |
-| `assets/`      | 3D-Mensch (`human.json` + `human.bin`, aus MakeHuman erzeugt) |
+| `assets/`      | 3D-Figuren Mann und Frau (`man.*`, `woman.*`, aus Character-Creator-FBX erzeugt) |
 | `vendor/`      | Three.js (MIT-Lizenz) |
-| `tools/makehuman_convert.py` | Erzeugt `assets/human.*` aus MakeHuman (Körperform, Skelett, Muskelflächen) |
+| `tools/cc_convert.py` | Erzeugt `assets/man.*` und `assets/woman.*` aus den FBX-Modellen (Blender: Skelett, Gewichte, Texturfarben, Muskelflächen) |
+| `tools/makehuman_convert.py` | Älterer Konverter für das frühere MakeHuman-Modell |
 | `manifest.json`| Web-App-Manifest (Name, Icons, Vollbild, Shortcuts) |
 | `sw.js`        | Service Worker für den Offline-Betrieb        |
 | `icons/`       | App-Icons                                     |
@@ -97,7 +98,9 @@ Alle Daten bleiben lokal im Browser bzw. in der App (`localStorage`). Mit **Expo
 
 ## 3D-Modell und Lizenzen
 
-- **Mensch:** Basismodell und Formvorlagen von [MakeHuman](http://www.makehumancommunity.org/). Die MakeHuman-Assets (Mesh, Formvorlagen, Skelett) stehen unter **CC0** und dürfen frei verwendet werden, auch kommerziell ([Lizenzerklärung](http://www.makehumancommunity.org/content/license_explanation.html)). Eingestellt: männlich, jung, maximale Muskulatur, durchschnittliches Gewicht, Idealproportionen.
+- **Mann und Frau:** „Realistic Human Basemesh – Rigged – Game-Ready“ (Character Creator 4, FBX-Export), umgewandelt mit `tools/cc_convert.py`:
+  `blender -b --factory-startup -P tools/cc_convert.py -- <blender.Fbx> assets man male` (bzw. `woman female`). Beide werden auf dieselbe Hüfthöhe skaliert, damit Posen und Geräte für beide passen. Bitte die Lizenz des Modells beachten, bevor die App öffentlich gestellt wird.
+- **Früheres Modell:** Basismodell und Formvorlagen von [MakeHuman](http://www.makehumancommunity.org/). Die MakeHuman-Assets (Mesh, Formvorlagen, Skelett) stehen unter **CC0** und dürfen frei verwendet werden, auch kommerziell ([Lizenzerklärung](http://www.makehumancommunity.org/content/license_explanation.html)). Eingestellt: männlich, jung, maximale Muskulatur, durchschnittliches Gewicht, Idealproportionen.
 - **Three.js:** MIT-Lizenz, siehe `vendor/three-LICENSE.txt`.
 - Modell neu erzeugen (z. B. mit anderer Körperform): Werte `MUSCLE`/`WEIGHT` in `tools/makehuman_convert.py` ändern und ausführen:
 
