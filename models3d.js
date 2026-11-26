@@ -29,7 +29,7 @@ const ARMS_DOWN = { shF: 0, shA: 6, shR: 0, el: 6, sup: 0 };
 const EX = {
   bench: {
     anchor: 'hip', at: [0, 0.56, 0.12], muscles: ['chest', 'triceps', 'delts'], bar: 'hands', equip: ['bench', 'rack'], view: 62,
-    p0: { pitch: -90, spine: 0, chest: -6, neck: 8, shF: -55, shA: 55, shR: 20, el: 105, sup: -80, hpF: -8, hpA: 24, hpR: 16, kn: 82, an: 0 },
+    p0: { pitch: -90, spine: 0, chest: -6, neck: 8, shF: -62, shA: 55, shR: 20, el: 105, sup: -80, hpF: -8, hpA: 24, hpR: 16, kn: 82, an: 0 },
     p1: { pitch: -90, spine: 0, chest: -6, neck: 8, shF: 80, shA: 20, shR: 0, el: 4, sup: -80, hpF: -8, hpA: 24, hpR: 16, kn: 82, an: 0 },
   },
   incline: {
@@ -44,7 +44,7 @@ const EX = {
   },
   deadlift: {
     anchor: 'feet', muscles: ['hamstrings', 'glutes', 'lowerBack'], bar: 'hands', view: 68,
-    p0: { pitch: 54, spine: 4, chest: 0, neck: -40, hpF: 112, hpA: 6, hpR: 6, kn: 78, an: 20, shF: 58, shA: 8, shR: 0, el: 2, sup: -85 },
+    p0: { pitch: 62, spine: 6, chest: 0, neck: -44, hpF: 122, hpA: 10, hpR: 10, kn: 84, an: 24, shF: 64, shA: 8, shR: 0, el: 2, sup: -85 },
     p1: { pitch: -2, spine: 0, chest: 0, neck: 0, hpF: 0, hpA: 6, hpR: 6, kn: 0, an: 0, shF: 2, shA: 10, shR: 0, el: 2, sup: -85 },
   },
   ohp: {
@@ -64,8 +64,8 @@ const EX = {
   },
   pushup: {
     anchor: 'toes', at: [0, 0, -0.62], muscles: ['chest', 'triceps'], view: 72,
-    p0: { pitch: 86, spine: 0, neck: -14, shF: -18, shA: 46, shR: 0, el: 122, sup: -90, wr: -70, hpF: 0, hpA: 6, kn: 0, an: -32 },
-    p1: { pitch: 72.5, spine: 0, neck: -12, shF: 72, shA: 12, shR: 0, el: 2, sup: -90, wr: -70, hpF: 0, hpA: 6, kn: 0, an: -20 },
+    p0: { pitch: 86, spine: 0, neck: -14, shF: -18, shA: 46, shR: 0, el: 112, sup: -90, wr: -85, grip: 0, hpF: 0, hpA: 6, kn: 0, an: -32 },
+    p1: { pitch: 72.5, spine: 0, neck: -12, shF: 72, shA: 12, shR: 0, el: 2, sup: -90, wr: -85, grip: 0, hpF: 0, hpA: 6, kn: 0, an: -20 },
   },
   dips: {
     anchor: 'hands', at: [0, 1.22, 0], muscles: ['chest', 'triceps'], equip: ['dipbar'], view: 62,
@@ -98,7 +98,7 @@ const EX = {
     p1: { ...STAND, pitch: 10, neck: -8, hpF: 8, kn: 8, an: 2, shF: 12, shA: 10, shR: 0, el: 6, sup: -80, wr: 0 },
   },
   calf: {
-    anchor: 'feet', muscles: ['calves'], dumbbells: true, view: 70,
+    anchor: 'feet', muscles: ['calves'], dumbbells: true, view: 84,
     p0: { ...STAND, ...ARMS_DOWN, an: 0 },
     p1: { ...STAND, ...ARMS_DOWN, an: -38 },
   },
@@ -121,6 +121,8 @@ function themeColors() {
     frame: dark ? '#56524c' : '#8b857b',
     plate: dark ? '#2b2825' : '#2f2b27',
     floor: g('--line', '#e4e1da'),
+    shorts: dark ? '#34312d' : '#3d3934',
+    eye: '#2a2622',
   };
 }
 
@@ -238,7 +240,8 @@ function applyPose(F, P) {
     const S = F.sides[side], s = S.s;
     S.sh.rotation.set(-D(g(side, 'shF')), s * D(g(side, 'shR')), s * D(g(side, 'shA')));
     S.el.rotation.x = -D(g(side, 'el'));
-    S.wr.rotation.set(-D(g(side, 'wr')), s * D(g(side, 'sup')), 0);
+    // Handgelenk beugen (+) / strecken (-) Richtung Handfläche, dann Unterarm drehen
+    S.wr.rotation.set(0, s * D(g(side, 'sup')), -s * D(g(side, 'wr')));
     S.hp.rotation.set(-D(g(side, 'hpF')), s * D(g(side, 'hpR')), s * D(g(side, 'hpA')));
     S.kn.rotation.x = D(g(side, 'kn'));
     S.an.rotation.x = -D(g(side, 'an'));
@@ -398,17 +401,27 @@ function buildEquip(def, mats, F) {
       for (const sx of [-1, 1]) { const h = cyl(mats.metal, 0.018, 0.22); h.rotation.x = Math.PI / 2; add(h, sx * 0.29, 0.5, -0.12); }
       // Schlitten: Schienen unter der Fußplatte, 45° nach vorne oben
       const dir = V(0, Math.SQRT1_2, Math.SQRT1_2), nrm = V(0, -Math.SQRT1_2, Math.SQRT1_2);
-      const r0 = V(0, 0.98, 1.12).addScaledVector(nrm, 0.22).addScaledVector(dir, -0.55);
-      const r1 = r0.clone().addScaledVector(dir, 1.6);
+      // Schienen werden nach dem Bau an die tatsächliche Fußbahn angepasst (calibrate)
+      const rails = [];
       for (const sx of [-1, 1]) {
-        const r = rod(mats.metal, 0.028); E.static.add(r);
-        setRod(r, r0.clone().setX(sx * 0.24), r1.clone().setX(sx * 0.24));
-        const post = rod(mats.frame, 0.035); E.static.add(post);
-        setRod(post, V(sx * 0.24, 0, r1.z), r1.clone().setX(sx * 0.24));
-        const post2 = rod(mats.frame, 0.035); E.static.add(post2);
-        setRod(post2, V(sx * 0.24, 0, r0.z), r0.clone().setX(sx * 0.24));
+        const r = rod(mats.metal, 0.028), post = rod(mats.frame, 0.035), post2 = rod(mats.frame, 0.035);
+        E.static.add(r, post, post2);
+        rails.push([sx, r, post, post2]);
       }
-      add(box(mats.frame, 0.6, 0.05, 2.5), 0, 0.025, 0.5);
+      const basePl = add(box(mats.frame, 0.6, 0.05, 1), 0, 0.025, 0);
+      E.calibrate = (c0, c1) => {
+        const d = c1.clone().sub(c0).setX(0).normalize();
+        const n = V(0, -d.z, d.y); // senkrecht zur Bahn, nach unten/vorne
+        const a = c0.clone().addScaledVector(d, -0.3).addScaledVector(n, 0.2);
+        const b = c1.clone().addScaledVector(d, 0.65).addScaledVector(n, 0.2);
+        for (const [sx, r, post, post2] of rails) {
+          setRod(r, a.clone().setX(sx * 0.24), b.clone().setX(sx * 0.24));
+          setRod(post, V(sx * 0.24, 0, b.z), b.clone().setX(sx * 0.24));
+          setRod(post2, V(sx * 0.24, 0, a.z), a.clone().setX(sx * 0.24));
+        }
+        const z0 = -0.95, z1 = b.z + 0.12;
+        basePl.scale.z = z1 - z0; basePl.position.z = (z0 + z1) / 2;
+      };
       // Fußplatte folgt den Füßen
       const plate = new THREE.Group();
       plate.add(box(mats.frame, 0.6, 0.55, 0.04));
@@ -423,6 +436,7 @@ function buildEquip(def, mats, F) {
         const c = wp(F.sides.l.heel).add(wp(F.sides.l.toe)).add(wp(F.sides.r.heel)).add(wp(F.sides.r.toe)).multiplyScalar(0.25);
         plate.position.copy(c).addScaledVector(dir, 0.025);
         plate.position.x = 0;
+        E.plateC = plate.position.clone();
       });
     }
     if (e === 'latseat') {
@@ -463,6 +477,177 @@ function buildEquip(def, mats, F) {
   }
   if (E.barbell) E.static.add(E.barbell);
   return E;
+}
+
+/* ---------------- Realistischer Mensch (MakeHuman, CC0) ----------------
+ *  Das Modell hat ein eigenes Skelett in der Grundhaltung von MakeHuman (A-Pose).
+ *  Die Gliederpuppe oben bleibt unsichtbar als "Treiber": Ihre Gelenkrotationen
+ *  werden auf die Knochen übertragen. Pro Knochen gleicht R_bind den Unterschied
+ *  zwischen A-Pose und unserer Ruhehaltung (Arme hängen) aus.
+ */
+let HUMAN = null; // { meta, buf }
+let humanVersion = 0;
+const humanReady = (async () => {
+  if (typeof fetch === 'undefined') return;
+  try {
+    const base = new URL('./assets/', import.meta.url);
+    const [meta, buf] = await Promise.all([
+      fetch(new URL('human.json', base)).then((r) => r.json()),
+      fetch(new URL('human.bin', base)).then((r) => r.arrayBuffer()),
+    ]);
+    HUMAN = { meta, buf };
+    humanVersion++;
+  } catch (e) { /* offline ohne Cache: Gliederpuppe bleibt */ }
+})();
+
+const TYPES = { i16: Int16Array, u16: Uint16Array, u8: Uint8Array };
+function buf(name) {
+  const b = HUMAN.meta.buffers[name];
+  return new TYPES[b.type](HUMAN.buf, b.offset, b.length / TYPES[b.type].BYTES_PER_ELEMENT);
+}
+
+/** Ruhe-Richtung je Gelenk (Arme/Beine hängen) und Kind-Gelenk, das die Richtung im Modell vorgibt */
+const REST_AIM = { sh: 'el', el: 'wr', fa: 'wr', wr: 'f1', f1: 'f2', f2: 'f2', hp: 'kn', kn: 'an' };
+/** Zusätzliche Drehung um die Längsachse (Grad), damit die Handflächen zum Körper zeigen */
+const REST_TWIST = { el: 0, fa: 0, wr: 0, f1: 0, f2: 0 };
+
+function buildHuman(colors) {
+  const { meta } = HUMAN;
+  const n = meta.vertices;
+  const geo = new THREE.BufferGeometry();
+  const p16 = buf('pos');
+  const pos = new Float32Array(n * 3);
+  for (let i = 0; i < pos.length; i++) pos[i] = p16[i] / 1000;
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  geo.setIndex(new THREE.BufferAttribute(new Uint16Array(buf('idx')), 1));
+  geo.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(new Uint16Array(buf('ji')), 4));
+  const jw = buf('jw'), w = new Float32Array(jw.length);
+  for (let i = 0; i < jw.length; i++) w[i] = jw[i] / 255;
+  geo.setAttribute('skinWeight', new THREE.BufferAttribute(w, 4));
+  geo.setAttribute('color', new THREE.BufferAttribute(new Float32Array(n * 3), 3));
+  geo.computeVertexNormals();
+
+  // Skelett in Grundhaltung: alle Knochen ohne Drehung, nur versetzt
+  const J = {}, bones = [];
+  for (const j of meta.joints) {
+    const b = new THREE.Bone();
+    b.name = j.name;
+    const p = V(...j.pos);
+    if (j.parent) { b.position.copy(p).sub(V(...J[j.parent].pos)); J[j.parent].bone.add(b); }
+    else b.position.copy(p);
+    J[j.name] = { bone: b, pos: j.pos, parent: j.parent, rbindInv: new THREE.Quaternion() };
+    bones.push(b);
+  }
+  // R_bind: dreht unsere Ruhehaltung in die A-Pose des Modells
+  for (const [name, info] of Object.entries(J)) {
+    const [kind, side] = name.split('.');
+    const aim = REST_AIM[kind];
+    if (!aim || !side) continue;
+    let child = J[aim + '.' + side];
+    let from = V(...info.pos);
+    if (aim === kind) { from = V(...J[info.parent].pos); child = info; } // letztes Fingerglied: Richtung des Elternglieds
+    const dir = V(...child.pos).sub(from).normalize();
+    const q = new THREE.Quaternion().setFromUnitVectors(V(0, -1, 0), dir);
+    const tw = REST_TWIST[kind] || 0;
+    if (tw) q.multiply(new THREE.Quaternion().setFromAxisAngle(V(0, 1, 0), D(tw * (side === 'L' ? 1 : -1))));
+    info.rbindInv = q.invert();
+  }
+  const root = J.root.bone;
+  const skeleton = new THREE.Skeleton(bones);
+  const mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.6, metalness: 0 });
+  const mesh = new THREE.SkinnedMesh(geo, mat);
+  mesh.add(root);
+  mesh.updateMatrixWorld(true);
+  mesh.bind(skeleton);
+  mesh.castShadow = true;
+  mesh.frustumCulled = false;
+
+  // Marker (Griff, Ferse, Zehen, Nacken) hängen an den Knochen
+  const mk = (name) => {
+    const m = meta.markers[name];
+    const o = new THREE.Object3D();
+    o.position.copy(V(...m.pos)).sub(V(...J[m.joint].pos));
+    J[m.joint].bone.add(o);
+    return o;
+  };
+  const sides = {};
+  for (const [s, S] of [['l', 'L'], ['r', 'R']]) {
+    const g = mk('grip.' + S);
+    // Kind-Objekt im Hand-Koordinatensystem der Gliederpuppe (für Hanteln)
+    const grip = new THREE.Object3D();
+    grip.quaternion.copy(J['wr.' + S].rbindInv).invert();
+    g.add(grip);
+    sides[s] = { grip, heel: mk('heel.' + S), toe: mk('toe.' + S) };
+  }
+  const H = { mesh, J, root, sides, traps: mk('traps'), curlAxis: {} };
+  // Knöchellinie (Zeigefinger -> kleiner Finger) im Hand-System unserer Ruhehaltung
+  for (const S of ['L', 'R']) {
+    const [k2, k5] = meta.knuckles[S].map((p) => V(...p));
+    const axis = k5.sub(k2).normalize().applyQuaternion(J['wr.' + S].rbindInv);
+    H.curlAxis[S] = S === 'L' ? axis : axis.negate();
+  }
+
+  H.paint = (active) => {
+    const masks = buf('mask'), part = buf('part'), mk = meta.masks.length;
+    const col = geo.attributes.color.array;
+    const body = new THREE.Color(colors.body), acc = new THREE.Color(colors.accent);
+    const shorts = new THREE.Color(colors.shorts), eye = new THREE.Color(colors.eye);
+    const ai = active.map((k) => meta.masks.indexOf(k)).filter((i) => i >= 0);
+    const si = meta.masks.indexOf('shorts');
+    const c = new THREE.Color();
+    for (let i = 0; i < n; i++) {
+      if (part[i] === 1) { eye.toArray(col, i * 3); continue; }
+      let a = 0;
+      for (const k of ai) a = Math.max(a, masks[i * mk + k] / 255);
+      const sh = masks[i * mk + si] / 255;
+      c.copy(body).lerp(shorts, sh).lerp(acc, a * (1 - sh * 0.25));
+      c.toArray(col, i * 3);
+    }
+    geo.attributes.color.needsUpdate = true;
+  };
+
+  const tmpQ = new THREE.Quaternion(), world = {};
+  /** Treiber-Pose (Gliederpuppe) auf das Skelett übertragen */
+  H.drive = (F, P) => {
+    const wq = (o) => o.getWorldQuaternion(new THREE.Quaternion());
+    const g = (side, k) => P[side + '_' + k] ?? P[k] ?? 0;
+    const src = {
+      root: wq(F.root), spine: wq(F.spine), chest: wq(F.chest), neck: wq(F.neck), head: wq(F.head),
+    };
+    for (const [s, S] of [['l', 'L'], ['r', 'R']]) {
+      const T = F.sides[s], sg = T.s;
+      src['sh.' + S] = wq(T.sh);
+      src['el.' + S] = wq(T.el);
+      src['wr.' + S] = wq(T.wr);
+      // Unterarm dreht nur halb mit (wie Elle/Speiche), Hand ganz
+      src['fa.' + S] = src['el.' + S].clone().multiply(tmpQ.setFromAxisAngle(V(0, 1, 0), sg * D(g(s, 'sup')) * 0.5));
+      // Finger greifen (Faust): Drehung um die Knöchellinie
+      const curl = D(P.grip ?? 80), ax = H.curlAxis[S];
+      src['f1.' + S] = src['wr.' + S].clone().multiply(tmpQ.setFromAxisAngle(ax, curl * 0.9));
+      src['f2.' + S] = src['f1.' + S].clone().multiply(tmpQ.setFromAxisAngle(ax, curl));
+      src['hp.' + S] = wq(T.hp);
+      src['kn.' + S] = wq(T.kn);
+      src['an.' + S] = wq(T.an);
+      const an = g(s, 'an');
+      src['toe.' + S] = src['an.' + S].clone().multiply(tmpQ.setFromAxisAngle(V(1, 0, 0), an < 0 ? D(an) : 0));
+    }
+    for (const [name, info] of Object.entries(J)) {
+      let q = src[name];
+      if (!q) {
+        // Schulterblatt: folgt dem Arm zu einem Drittel
+        const S = name.split('.')[1];
+        const arm = src['sh.' + S].clone().multiply(J['sh.' + S].rbindInv);
+        q = src.chest.clone().slerp(arm, 0.33);
+        world[name] = q;
+      } else {
+        world[name] = q.clone().multiply(info.rbindInv);
+      }
+      const b = info.bone;
+      if (info.parent) b.quaternion.copy(world[info.parent]).invert().multiply(world[name]);
+      else b.quaternion.copy(world[name]);
+    }
+  };
+  return H;
 }
 
 /* ---------------- Szene je Ansicht ---------------- */
@@ -517,22 +702,40 @@ class View {
     scene.add(shadow);
 
     const F = buildFigure(mats);
-    for (const k of def.muscles) for (const m of F.muscles[k] || []) m.material = mats.muscle;
-    scene.add(F.root);
-    const E = buildEquip(def, mats, F);
+    let A = F, H = null;
+    if (HUMAN) {
+      // Realistischer Körper; die Gliederpuppe bleibt unsichtbar als Treiber
+      H = buildHuman(C);
+      H.paint(def.muscles);
+      scene.add(H.mesh);
+      A = H;
+    } else {
+      for (const k of def.muscles) for (const m of F.muscles[k] || []) m.material = mats.muscle;
+      scene.add(F.root);
+    }
+    const E = buildEquip(def, mats, A);
     scene.add(E.static);
-    this.scene = scene; this.F = F; this.E = E; this.def = def; this.exId = exId;
+    this.scene = scene; this.F = F; this.H = H; this.A = A; this.E = E; this.def = def; this.exId = exId;
     if (this.az === null || !this.keepAz) this.az = def.view ?? 55;
+    if (E.calibrate) {
+      this.pose(0); const c0 = E.plateC.clone();
+      this.pose(1); E.calibrate(c0, E.plateC.clone());
+    }
     this.fitBox = this.computeBox();
   }
 
   pose(pos) {
     const def = this.def;
     const P = interpPose(def.p0, def.p1, Math.max(0, Math.min(1, pos)));
-    const F = this.F;
-    F.root.position.set(0, 0, 0);
-    applyPose(F, P);
-    F.root.updateMatrixWorld(true);
+    const F = this.A, D0 = this.F, H = this.H;
+    D0.root.position.set(0, 0, 0);
+    applyPose(D0, P);
+    D0.root.updateMatrixWorld(true);
+    if (H) {
+      H.drive(D0, P);
+      H.root.position.set(0, 0, 0);
+      H.mesh.updateMatrixWorld(true);
+    }
     const at = def.at ? V(...def.at) : V(0, 0, 0);
     let off;
     const soles = (sides) => sides.flatMap((s) => [wp(F.sides[s].heel), wp(F.sides[s].toe)]);
@@ -551,7 +754,7 @@ class View {
       off = V(at.x - c.x, at.y - minY, at.z - c.z);
     }
     F.root.position.copy(off);
-    F.root.updateMatrixWorld(true);
+    (H ? H.mesh : F.root).updateMatrixWorld(true);
     for (const fn of this.E.dyn) fn();
     this.lastPose = P;
   }
@@ -561,9 +764,10 @@ class View {
     for (const t of [0, 0.5, 1]) {
       this.pose(t);
       this.scene.updateMatrixWorld(true);
-      const b = new THREE.Box3();
-      b.expandByObject(this.F.root);
-      box.union(b);
+      if (this.H) {
+        this.H.mesh.computeBoundingBox();
+        box.union(this.H.mesh.boundingBox.clone().applyMatrix4(this.H.mesh.matrixWorld));
+      } else box.union(new THREE.Box3().expandByObject(this.F.root));
       if (this.E.static.children.length) box.union(new THREE.Box3().setFromObject(this.E.static));
     }
     box.min.y = Math.min(box.min.y, 0);
@@ -571,7 +775,8 @@ class View {
   }
 
   fitCamera(aspect) {
-    const box = this.fitBox;
+    // window.__m3dFocus: nur zum Testen (Ausschnitt vergrößern)
+    const box = (typeof window !== 'undefined' && window.__m3dFocus?.(this, THREE)) || this.fitBox;
     const c = box.getCenter(V());
     const az = D(this.az), el = D(this.el);
     const dir = V(Math.sin(az) * Math.cos(el), Math.sin(el), Math.cos(az) * Math.cos(el)); // Kamera-Richtung (vom Ziel weg)
@@ -629,7 +834,7 @@ function radialTex() {
   radial.colorSpace = THREE.SRGBColorSpace;
   return radial;
 }
-const themeKey = () => (matchMedia('(prefers-color-scheme: dark)').matches ? 'd' : 'l') + getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
+const themeKey = () => humanVersion + (matchMedia('(prefers-color-scheme: dark)').matches ? 'd' : 'l') + getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
 
 /* ---------------- Öffentliche Schnittstelle ---------------- */
 const views = new Map();
@@ -662,6 +867,7 @@ const Model3D = {
     return url;
   },
   exercises: EX,
+  humanReady,
   /** Gelenkpositionen (zum Prüfen der Posen) */
   debug(exId, pos) {
     if (!thumbView) thumbView = new View(document.createElement('canvas'), { thumb: true });
@@ -669,8 +875,9 @@ const Model3D = {
     if (v.exId !== exId) { v.themeKey = themeKey(); v.build(exId); }
     v.pose(pos);
     const r = (o) => wp(o).toArray().map((n) => +n.toFixed(3));
-    const F = v.F, o = { pelvis: r(F.root), neck: r(F.neck) };
-    for (const s of ['l', 'r']) for (const k of ['sh', 'el', 'grip', 'hp', 'kn', 'heel', 'toe']) o[s + '.' + k] = r(F.sides[s][k]);
+    const A = v.A, o = { root: r(A.root), traps: r(A.traps) };
+    for (const s of ['l', 'r']) for (const k of ['grip', 'heel', 'toe']) o[s + '.' + k] = r(A.sides[s][k]);
+    if (v.H) for (const [n, j] of Object.entries(v.H.J)) o['J.' + n] = r(j.bone);
     return o;
   },
 };
@@ -689,4 +896,6 @@ if (typeof document !== 'undefined' && webglOk()) {
   window.Model3D = Model3D;
   document.documentElement.classList.add('has-3d');
   window.dispatchEvent(new Event('model3d-ready'));
+  // Sobald der realistische Körper geladen ist, Vorschaubilder neu zeichnen
+  humanReady.then(() => { if (HUMAN) window.dispatchEvent(new Event('model3d-ready')); });
 }
