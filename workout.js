@@ -267,7 +267,6 @@ function renderLive() {
       <div class="lx-actions">
         <button class="btn sm" data-add-set="${i}">${ic('plus')}Satz</button>
         <button class="btn sm" data-tips="${esc(e.exId)}">${ic('info')}Tipps</button>
-        ${info.model ? `<button class="btn sm" data-demo-ex="${i}">${ic('play')}Vorführen</button>` : ''}
         <button class="btn sm" data-coach="${i}">${ic('timer')}Tempo-Coach</button>
       </div>
     </section>`;
@@ -488,7 +487,7 @@ function renderPickerList() {
   const q = ($('#pk-search')?.value || '').trim().toLowerCase();
   const list = allExercises().filter((e) => (!pickerGroup || e.group === pickerGroup) && (!q || e.name.toLowerCase().includes(q)));
   $('#pk-list').innerHTML = list.map((e) => `<div class="pk-row"><button class="pk-item" data-pick="${e.id}">
-      ${exThumb(e.id, 'mini-thumb')}<span><b>${esc(e.name)}</b><small class="muted">${GROUPS[e.group]}${e.model ? '' : ' · ohne Animation'}</small></span></button>
+      ${exThumb(e.id, 'mini-thumb')}<span><b>${esc(e.name)}</b><small class="muted">${GROUPS[e.group]}</small></span></button>
       ${TIPS[e.id] ? `<button class="icon-btn ghost" data-tips="${e.id}" aria-label="Tipps zu ${esc(e.name)}">${ic('info')}</button>` : ''}</div>`).join('')
     || '<p class="muted">Nichts gefunden. Leg die Übung unten selbst an.</p>';
 }

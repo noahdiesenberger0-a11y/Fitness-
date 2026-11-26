@@ -141,7 +141,6 @@ function showTips(exId) {
       <h4 class="sd-h">Typische Fehler</h4><ul class="tips-list avoid">${t.avoid.map((x) => `<li>${esc(x)}</li>`).join('')}</ul>`
       : '<p class="muted">Für diese Übung gibt es noch keine Tipps.</p>'}
     <div class="modal-actions">
-      ${e.model ? `<button class="btn" data-tips-demo="${esc(exId)}">${ic('play')}Vorführen</button>` : ''}
       <button class="btn" data-close>Schließen</button>
     </div>`, 'tall');
 }

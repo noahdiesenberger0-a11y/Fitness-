@@ -1,7 +1,6 @@
 'use strict';
 
 /* ============================================================
- *  Animierte Figur: „Vorführen“ (Endlosschleife im Tempo) und
  *  „Tempo-Coach“ (führt durch einen Satz, zählt Wiederholungen mit
  *  und trägt sie danach im Training ein).
  *  Tempo-Schreibweise: runter-halten-hoch-halten in Sekunden, z. B. 3-1-1-0
@@ -46,23 +45,17 @@ function coachMarkup(title, sub, extra) {
     <div class="pl-head"><div><div class="pl-ex">${esc(title)}</div><div class="muted">${sub}</div></div>
       <button class="icon-btn" data-close aria-label="Schließen">${ic('x')}</button></div>
     <div class="pl-phase" id="pl-phase" aria-live="polite">Bereit</div>
-    ${info.model ? `<svg class="pl-anim model" id="pl-anim" viewBox="${modelViewBox(info.model)}" aria-hidden="true"></svg>
-      <canvas class="pl-anim model3d" id="pl-anim3d" aria-label="3D-Figur, zum Drehen seitlich ziehen"></canvas>
-      <div class="m3d-hint">Zum Drehen ziehen</div>
-      <div class="muscle-tags">${modelMuscleNames(info.model).map((m) => `<span>${m}</span>`).join('')}</div>`
-      : `<p class="muted coach-nofig">Für diese Übung gibt es noch keine Figur. Der Takt läuft trotzdem.</p>`}
+    <div class="tempo-orb" aria-hidden="true"><i id="pl-orb"></i></div>
+    ${GROUPS[info.group] ? `<div class="muscle-tags"><span>${GROUPS[info.group]}</span></div>` : ''}
     <div class="pl-phasebar"><i id="pl-phasefill"></i></div>
     ${extra}
   </div>`;
 }
 
+/** Tempo-Kreis: groß = Endposition, klein = Startposition der Bewegung */
 function drawFigure(pos) {
-  const info = exInfo(C.exId);
-  if (!info.model) return;
-  const cv = document.getElementById('pl-anim3d');
-  if (window.Model3D?.ready && cv) return Model3D.draw(cv, info.model, pos);
-  const svg = document.getElementById('pl-anim');
-  if (svg) svg.innerHTML = modelSvg(info.model, pos);
+  const orb = document.getElementById('pl-orb');
+  if (orb) orb.style.transform = `scale(${(0.45 + 0.55 * pos).toFixed(3)})`;
 }
 
 /* ---------- Vorführen ---------- */

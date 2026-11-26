@@ -559,7 +559,10 @@ button, label.btn, .tabs, .chips, .list-row, .activity, .heatmap, .pr, .day-item
 body.modal-open { overflow: hidden; }
 .mini-thumb { width: 44px; height: 36px; flex-shrink: 0; background: var(--panel2); border-radius: 6px; }
 .thumb-icon { display: grid; place-items: center; color: var(--muted); }
-.thumb-icon .i { width: 18px; height: 18px; }
+.thumb-icon span { font: 700 15px/1 var(--font-display); color: var(--accent); letter-spacing: .02em; }
+/* Tempo-Kreis im Coach: wächst und schrumpft im Takt der Wiederholung */
+.tempo-orb { width: min(220px, 60vw); aspect-ratio: 1; margin: var(--s-3) auto var(--s-4); border-radius: 50%; display: grid; place-items: center; background: var(--panel2); }
+.tempo-orb i { width: 100%; height: 100%; border-radius: 50%; background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--accent) 55%, #fff), var(--accent)); transform: scale(.45); }
 
 /* ---------- Training: Startseite ---------- */
 .next-card .card-head { align-items: flex-end; }
@@ -761,16 +764,9 @@ body.resting .toast { bottom: 100px; }
 
 /* ---------- Tempo-Coach ---------- */
 .coach { text-align: center; }
-.coach .pl-anim { max-width: 380px; }
-/* 3D-Figur (WebGL); ohne WebGL bleibt die 2D-Figur */
-.model3d { display: none; width: 100%; aspect-ratio: 6 / 5; max-height: 380px; touch-action: pan-y; cursor: grab; }
-.model3d:active { cursor: grabbing; }
-.m3d-hint { display: none; text-align: center; font-size: var(--t-label); color: var(--muted); margin-top: calc(-1 * var(--s-1)); }
-.has-3d .model3d, .has-3d .m3d-hint { display: block; }
-.has-3d #pl-anim { display: none; }
-img.model { object-fit: contain; }
+.coach-tempo > * { min-width: 0; }
 .coach-tempo { display: flex; align-items: center; gap: var(--s-2); justify-content: center; margin-top: var(--s-4); font-size: var(--t-small); color: var(--muted); }
-.coach-tempo select { width: auto; min-height: 40px; font-size: 15px; }
+.coach-tempo select { width: auto; min-width: 0; max-width: 100%; flex: 0 1 auto; min-height: 40px; font-size: 15px; text-overflow: ellipsis; }
 .coach-nofig { padding: var(--s-5) 0; }
 .coach .rec-buttons { display: flex; gap: var(--s-2); justify-content: center; margin-top: var(--s-4); flex-wrap: wrap; }
 .coach .rec-buttons .btn { flex: 1; }
